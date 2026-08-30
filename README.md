@@ -1,13 +1,17 @@
-# SOMPORN MOBILE CLOUD V12 CONNECT-FIX
+# SOMPORN STABLE REBUILD V15
 
-แก้ Cloud connect:
-- Supabase JS มี CDN สำรอง jsDelivr + unpkg
-- ตรวจว่ Library โหลดจริงก่อน createClient
-- ปุ่ม “ทดสอบ Cloud”
-- Health check ตาราง somporn_org_state แบบตรง ๆ
-- ข้อความ error ชัดเจน
-- ถ้า health check ไม่ผ่าน จะไม่ pull ต่อให้ระบบรวน
-- UI / Multi-Org / delete parcel / fast pin เดิมยังอยู่
+สร้างใหม่จาก V8 ซึ่งเป็นฐานที่ใช้งานได้จริง ไม่ต่อจาก V9-V14 ที่โค้ดถูก patch ซ้อนจนโครงสร้างเสีย
 
-ถ้ายังเชื่อมไม่ได้:
-กด “ทดสอบ Cloud” แล้วดูข้อความมุมขวาบน
+ฟังก์ชันหลัก:
+- เพิ่ม/สลับหลาย อปท.
+- Cloud แยก 1 row ต่อ 1 อปท. (somporn_org_state)
+- นำเข้า KML / JSON / GeoJSON และล็อก อปท. เป้าหมาย
+- ค้นหารหัสแปลง + หมุด + Google Maps
+- เพิ่ม/แก้ไข/ลบสิ่งปลูกสร้าง
+- ลบแปลงรายแปลง
+- ลบชุดแปลงนำเข้าทั้งชุด
+- จุดสำรวจ
+- CSV / Backup / Restore
+- มือถือเปิด/ปิดเมนู
+
+SQL somporn_org_state ที่รันไปแล้วใช้ต่อได้ ไม่ต้องรันซ้ำ
