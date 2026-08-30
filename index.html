@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SOMPORN Parcel MOBILE CLOUD V10 ORG-SAFE</title>
+<title>SOMPORN Parcel MOBILE CLOUD V12 CONNECT-FIX</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box} html,body{height:100%;margin:0;font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;color:#17202a}
@@ -88,6 +88,103 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
 }
 </style>
 
+
+<style>
+/* ===== V11 UI SAFE ===== */
+#topMobile{
+  display:block !important;
+  position:fixed !important;
+  left:12px !important;
+  top:12px !important;
+  z-index:3000 !important;
+  background:#0d6efd !important;
+  color:#fff !important;
+  border:0 !important;
+  border-radius:10px !important;
+  padding:9px 12px !important;
+  box-shadow:0 2px 12px rgba(0,0,0,.28) !important;
+  font-weight:700 !important;
+}
+#side{
+  visibility:visible;
+}
+@media (min-width:761px){
+  #app{
+    display:grid !important;
+    grid-template-columns:330px minmax(0,1fr) !important;
+  }
+  #side{
+    display:block !important;
+    position:relative !important;
+    transform:none !important;
+    width:330px !important;
+    height:100vh !important;
+    left:auto !important;
+    top:auto !important;
+    bottom:auto !important;
+  }
+  #sideOverlay{display:none !important}
+  .mobile-side-head{display:none !important}
+  #mapWrap{height:100vh !important}
+  #topMobile{
+    left:342px !important;
+    top:10px !important;
+    padding:7px 9px !important;
+    font-size:11px !important;
+    opacity:.85;
+  }
+  body.desktop-hide-side #app{
+    grid-template-columns:0 minmax(0,1fr) !important;
+  }
+  body.desktop-hide-side #side{
+    display:none !important;
+  }
+  body.desktop-hide-side #topMobile{
+    left:12px !important;
+    opacity:1;
+  }
+}
+@media (max-width:760px){
+  #app{display:block !important}
+  #side{
+    display:block !important;
+    position:fixed !important;
+    left:0 !important;
+    top:0 !important;
+    bottom:0 !important;
+    width:min(92vw,380px) !important;
+    height:100vh !important;
+    transform:translateX(-105%) !important;
+    transition:transform .18s ease !important;
+    z-index:2600 !important;
+    overflow:auto !important;
+    background:#fff !important;
+  }
+  #side.open{transform:translateX(0) !important}
+  #sideOverlay{
+    display:block !important;
+    position:fixed !important;
+    inset:0 !important;
+    z-index:2500 !important;
+    background:rgba(0,0,0,.38) !important;
+    opacity:0;
+    pointer-events:none;
+  }
+  #sideOverlay.open{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .mobile-side-head{
+    display:flex !important;
+    position:sticky !important;
+    top:0 !important;
+    background:#fff !important;
+    z-index:30 !important;
+  }
+  #mapWrap{height:100vh !important}
+}
+</style>
+
 </head>
 <body>
 <div id="app">
@@ -103,7 +200,7 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
     </div>
   </div>
 
-  <h2>SOMPORN Parcel MOBILE CLOUD V10 ORG-SAFE</h2>
+  <h2>SOMPORN Parcel MOBILE CLOUD V12 CONNECT-FIX</h2>
   <div class="sub">ระบบแปลงที่ดิน + สิ่งปลูกสร้าง + จุดสำรวจ</div>
 
   <div class="section">
@@ -143,7 +240,7 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
     กำลังเชื่อมต่อข้อมูลกลาง...
   </div>
   <div class="row" style="margin-top:6px">
-    <button id="cloudSync" class="good grow">↻ รีเฟรชข้อมูลกลาง</button>
+    <button id="cloudSync" class="good grow">↻ รีเฟรชข้อมูลกลาง</button><button id="cloudTest" class="primary grow">🧪 ทดสอบ Cloud</button>
   </div>
 </div>
 
@@ -152,7 +249,7 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
 </aside>
 
 <main id="mapWrap">
-  <div id="versionBadge" style="position:absolute;right:10px;top:10px;z-index:1300;background:#111827;color:#fff;padding:6px 8px;border-radius:8px;font-size:11px">V10 ORG-SAFE</div>
+  <div id="versionBadge" style="position:absolute;right:10px;top:10px;z-index:1300;background:#111827;color:#fff;padding:6px 8px;border-radius:8px;font-size:11px">V12 CONNECT-FIX</div>
   <div id="cloudBadge" style="position:absolute;right:10px;top:42px;z-index:1300;background:#fff7e6;color:#8a5a00;padding:6px 8px;border-radius:8px;font-size:11px;max-width:70vw;box-shadow:0 1px 6px #0002">☁ กำลังตรวจ Cloud...</div>
   <button id="topMobile">☰ เมนู</button>
   <div id="map"></div>
@@ -174,6 +271,7 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>if(!window.supabase){document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\\/script>')}</script>
 <script>
 'use strict';
 
@@ -201,19 +299,23 @@ function cloudMsg(t,ok=false){
   }
 }
 function initCloud(){
-  if(!window.supabase){
+  if(!window.supabase || typeof window.supabase.createClient!=='function'){
     cloudClient=null;cloudReady=false;
-    cloudMsg('❌ โหลดระบบ Cloud ไม่สำเร็จ');
+    cloudMsg('❌ โหลด Supabase Library ไม่สำเร็จ — ลองเปิดด้วย Chrome/Edge โดยตรง');
     return false;
   }
   try{
-    cloudClient=window.supabase.createClient(FIXED_SUPABASE_URL,FIXED_SUPABASE_KEY,{auth:{persistSession:false}});
+    cloudClient=window.supabase.createClient(
+      FIXED_SUPABASE_URL,
+      FIXED_SUPABASE_KEY,
+      {auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}
+    );
     cloudReady=true;
-    cloudMsg('✅ ข้อมูลกลางเชื่อมต่อแล้ว',true);
+    cloudMsg('☁ กำลังทดสอบการเชื่อมต่อ...');
     return true;
   }catch(e){
     cloudClient=null;cloudReady=false;
-    cloudMsg('❌ เชื่อมต่อข้อมูลกลางไม่สำเร็จ');
+    cloudMsg('❌ สร้างการเชื่อมต่อ Cloud ไม่สำเร็จ: '+(e.message||e));
     return false;
   }
 }
@@ -321,11 +423,18 @@ function markLocalDirty(){localDirty=true;cloudWriteLock=true}
 function clearLocalDirty(){localDirty=false;cloudWriteLock=false}
 
 async function cloudHealthCheck(){
-  if(!cloudReady)return false;
+  if(!cloudReady || !cloudClient){
+    cloudMsg('❌ Cloud client ยังไม่พร้อม');
+    return false;
+  }
   try{
-    const {error}=await cloudClient.from('somporn_org_state').select('org_id,updated_at').limit(1);
+    cloudMsg('☁ กำลังติดต่อ Supabase...');
+    const {data,error,status:code}=await cloudClient
+      .from('somporn_org_state')
+      .select('org_id,updated_at')
+      .limit(1);
     if(error)throw error;
-    cloudMsg('✅ Cloud แบบแยก อบต. พร้อมใช้งาน',true);
+    cloudMsg('✅ เชื่อมต่อ Cloud สำเร็จ · ตารางพร้อมใช้งาน',true);
     return true;
   }catch(e){
     cloudMsg(cloudErrorText(e),false);
@@ -737,11 +846,23 @@ document.getElementById('search').onkeydown=e=>{if(e.key==='Enter')searchNow()};
 function setSideOpen(open){
  const side=document.getElementById('side');
  const overlay=document.getElementById('sideOverlay');
- side.classList.toggle('open',open);
- overlay.classList.toggle('open',open);
- setTimeout(()=>{try{map.invalidateSize(false)}catch(e){}},220);
+
+ if(window.innerWidth>760){
+   document.body.classList.toggle('desktop-hide-side',!open);
+ }else{
+   side.classList.toggle('open',open);
+   overlay.classList.toggle('open',open);
+ }
+ setTimeout(()=>{try{map.invalidateSize(true)}catch(e){}},220);
 }
-document.getElementById('topMobile').onclick=()=>setSideOpen(true);
+document.getElementById('topMobile').onclick=()=>{
+ if(window.innerWidth>760){
+   const hidden=document.body.classList.contains('desktop-hide-side');
+   setSideOpen(hidden);
+ }else{
+   setSideOpen(!document.getElementById('side').classList.contains('open'));
+ }
+};
 document.getElementById('closeSide').onclick=()=>setSideOpen(false);
 document.getElementById('sideOverlay').onclick=()=>setSideOpen(false);
 
@@ -824,25 +945,38 @@ document.getElementById('cloudSync').onclick=async()=>{
  const ok=await cloudHealthCheck();
  if(ok)await pullOrgCloud(currentOrgId,false);
 };
+document.getElementById('cloudTest').onclick=async()=>{
+ if(!initCloud())return;
+ const ok=await cloudHealthCheck();
+ alert(ok?'✅ Cloud เชื่อมต่อสำเร็จ':'❌ Cloud ยังเชื่อมต่อไม่ได้ ดูข้อความมุมขวาบน');
+};
+
 
 document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState==='visible' && cloudReady) pullOrgCloud(currentOrgId,true);
 });
 window.addEventListener('focus',()=>{if(cloudReady)pullOrgCloud(currentOrgId,true)});
-setInterval(()=>{if(cloudReady && document.visibilityState==='visible')pullOrgCloud(currentOrgId,true)},2000);
+setInterval(()=>{if(cloudReady && cloudClient && document.visibilityState==='visible')pullOrgCloud(currentOrgId,true)},3000);
 
 map.on('click',e=>{if(mode==='building-add'){const f=findParcel(e.latlng);if(!f)return alert('จุดนี้อยู่นอกแปลง');openBuildAdd(e.latlng,f)}else if(mode==='survey-add'){const f=findParcel(e.latlng);if(!f)return alert('จุดนี้อยู่นอกแปลง');openSurveyAdd(e.latlng,f)}});
 
 (async()=>{
  try{
+  document.body.classList.remove('desktop-hide-side');
   await openDB();await refreshOrgs();status('✅ ระบบพร้อมใช้งาน');
   setTimeout(()=>map.invalidateSize(true),250);
-  if(initCloud()){await cloudHealthCheck();await pullOrgCloud(currentOrgId,true);}
+  if(initCloud()){const ok=await cloudHealthCheck();if(ok)await pullOrgCloud(currentOrgId,true);}
  }catch(e){status('❌ เปิดฐานข้อมูลไม่สำเร็จ');alert('เปิดระบบไม่สำเร็จ: '+e.message)}
 })();
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape')setSideOpen(false)});
-window.addEventListener('resize',()=>{if(window.innerWidth>760)setSideOpen(false)});
+window.addEventListener('resize',()=>{
+ if(window.innerWidth>760){
+   document.getElementById('side').classList.remove('open');
+   document.getElementById('sideOverlay').classList.remove('open');
+ }
+ try{map.invalidateSize(true)}catch(e){}
+});
 
 
 window.addEventListener('online',()=>{cloudMsg('✅ อินเทอร์เน็ตกลับมาแล้ว กำลังโหลด Cloud...',true);pullOrgCloud(currentOrgId,true)});
