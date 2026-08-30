@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SOMPORN Multi-Org Parcel Manager CLEAN V1</title>
+<title>SOMPORN Multi-Org Parcel Manager STABLE V2</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 html,body{height:100%;margin:0;font-family:Tahoma,Arial,sans-serif;background:#f3f4f6}
@@ -52,43 +52,12 @@ button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;backgr
  #search{min-width:140px;flex-basis:55%}
 }
 </style>
-
-<style>
-.top-search-clean{
-  position:sticky;
-  top:0;
-  z-index:1000;
-  background:white;
-  padding:8px 0 9px;
-  margin-bottom:8px;
-  border-bottom:1px solid #e2e8f0;
-}
-.top-search-clean .mini-title{
-  font-weight:700;
-  font-size:13px;
-  margin-bottom:5px;
-}
-.top-search-clean .row{display:flex;gap:6px}
-.top-search-clean input{
-  flex:1;min-width:0;font-size:16px;padding:9px 10px;
-  border:1px solid #94a3b8;border-radius:8px;
-}
-#map{background:#dbeafe}
-</style>
 </head>
 <body>
-<div class="top-search-clean">
-  <div class="mini-title">🔎 ค้นหารหัสแปลงที่ดิน</div>
-  <div class="row">
-    <input id="search" placeholder="เช่น 02B019">
-    <button id="searchBtn" class="blue">ค้นหา</button>
-  </div>
-</div>
-
 <div id="app">
 <aside id="sidebar">
   <div id="brand">
-    <h2>SOMPORN Multi-Org Parcel CLEAN V1</h2>
+    <h2>SOMPORN Multi-Org Parcel STABLE V2</h2>
     <div class="sub">แปลงที่ดิน + สิ่งปลูกสร้าง + จุดสถานะสำรวจ</div>
   </div>
 
@@ -206,22 +175,8 @@ function simpleNamedSelectHtml(label,id,values,val=''){
 
 
 const map=L.map('map',{preferCanvas:true}).setView([13.7,100.5],9);
-
-const baseSatellite = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {maxZoom: 22, attribution: 'Tiles © Esri'}
-);
-const baseOSM = L.tileLayer(
-  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  {maxZoom: 22, attribution: '© OpenStreetMap'}
-);
-baseSatellite.addTo(map);
-L.control.layers(
-  {'🛰 ดาวเทียม': baseSatellite, '🗺 ถนน': baseOSM},
-  {},
-  {position:'topright'}
-).addTo(map);
-
+const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,attribution:'Imagery © Esri'}).addTo(map);
+const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,attribution:'© OpenStreetMap'});
 L.control.layers({'ดาวเทียม':sat,'ถนน':osm}).addTo(map);
 
 let db,currentOrgId=null,currentMode='view',showLabels=false;
@@ -557,27 +512,24 @@ document.getElementById('modeSelect').onchange=e=>{currentMode=e.target.value;do
 document.getElementById('toggleLabels').onclick=()=>{showLabels=!showLabels;document.getElementById('toggleLabels').textContent=showLabels?'🏷 ปิดรหัสแปลง':'🏷 เปิดรหัสแปลง';renderAll();};
 
 document.getElementById('file').addEventListener('change',async e=>{
- const file=e.target.files[0];
- if(!file)return;
+ const file=e.target.files[0];if(!file)return;
  try{
-   if(!currentOrgId) throw new Error('กรุณาสร้างหรือเลือก อปท. ก่อนนำเข้าข้อมูล');
-
+   if(!currentOrgId)throw new Error('กรุณาสร้างหรือเลือก อปท. ก่อนนำเข้าข้อมูล');
    document.getElementById('status').textContent='กำลังนำเข้า '+file.name+' ...';
+
    const text=await file.text();
    let geo,crs='EPSG:4326';
 
    if(file.name.toLowerCase().endsWith('.kml')){
      geo=parseKML(text);
    }else{
-     const obj=JSON.parse(text);
-     const n=normalizeGeo(obj);
+     const n=normalizeGeo(JSON.parse(text));
      geo=n.geo;
      crs=n.crs;
    }
 
-   if(!geo || !Array.isArray(geo.features)) throw new Error('ไม่พบข้อมูล Feature ในไฟล์');
-   const count=geo.features.length;
-   if(count===0) throw new Error('ไฟล์ไม่มี Feature');
+   const count=Array.isArray(geo?.features)?geo.features.length:0;
+   if(!count)throw new Error('ไม่พบ Feature ในไฟล์');
 
    await put('layers',{
      id:uuid(),
@@ -589,18 +541,6 @@ document.getElementById('file').addEventListener('change',async e=>{
    });
 
    await reloadOrg();
-
-   // fit to all parcel layers
-   try{
-     let bounds=null;
-     parcelLeaflet.forEach(l=>{
-       if(l && l.getBounds){
-         const b=l.getBounds();
-         if(b && b.isValid()) bounds=bounds?bounds.extend(b):b;
-       }
-     });
-     if(bounds && bounds.isValid()) map.fitBounds(bounds,{padding:[20,20],maxZoom:19});
-   }catch(_){}
 
    const msg='✅ นำเข้าเรียบร้อย: '+file.name+' จำนวน '+count.toLocaleString('th-TH')+' รายการ';
    document.getElementById('status').textContent=msg;
@@ -786,14 +726,26 @@ document.getElementById('restoreAll').addEventListener('change',async e=>{
 
 (async()=>{await openDB();await refreshOrgs();})();
 
-document.getElementById('searchBtn').onclick=doSearch;
-document.getElementById('search').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
-
-window.addEventListener('load',()=>{
-  setTimeout(()=>{try{map.invalidateSize(true);}catch(e){}},200);
-  setTimeout(()=>{try{map.invalidateSize(true);}catch(e){}},900);
+window.addEventListener('error',function(e){
+  const box=document.getElementById('fatalError');
+  if(box){
+    box.style.display='block';
+    box.textContent='⚠ โปรแกรมพบข้อผิดพลาด: '+(e.message||'ไม่ทราบสาเหตุ');
+  }
 });
-window.addEventListener('resize',()=>{try{map.invalidateSize(false);}catch(e){}});
+window.addEventListener('unhandledrejection',function(e){
+  const box=document.getElementById('fatalError');
+  if(box){
+    box.style.display='block';
+    box.textContent='⚠ โปรแกรมพบข้อผิดพลาด: '+((e.reason&&e.reason.message)||e.reason||'ไม่ทราบสาเหตุ');
+  }
+});
+
 </script>
+
+<div id="fatalError" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:99999;
+background:#b91c1c;color:white;padding:10px 12px;border-radius:10px;font:13px Tahoma,Arial,sans-serif;
+box-shadow:0 3px 14px rgba(0,0,0,.35)"></div>
+
 </body>
 </html>
