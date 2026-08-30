@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SOMPORN Multi-Org Parcel Manager V13</title>
+<title>SOMPORN Multi-Org Parcel Manager V16</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 html,body{height:100%;margin:0;font-family:Tahoma,Arial,sans-serif;background:#f3f4f6}
@@ -57,7 +57,7 @@ button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;backgr
 <div id="app">
 <aside id="sidebar">
   <div id="brand">
-    <h2>SOMPORN Multi-Org Parcel V13</h2>
+    <h2>SOMPORN Multi-Org Parcel V16</h2>
     <div class="sub">แปลงที่ดิน + สิ่งปลูกสร้าง + จุดสถานะสำรวจ</div>
   </div>
 
@@ -97,17 +97,16 @@ button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;backgr
       <input id="restoreAll" type="file" accept=".json" style="display:none">
     </div>
     <div class="cloudbox">
-      <div id="cloudState" class="cloudstate cloud-offline">☁ Shared Cloud: ยังไม่ได้ตั้งค่า</div>
+      <div id="cloudState" class="cloudstate cloud-offline">☁ ฐานข้อมูลกลาง: กำลังเชื่อมต่อ...</div>
       <div class="row">
-        <button id="cloudConfig">⚙ ตั้งค่า Shared Cloud</button>
-        <button id="cloudLogin" class="blue">🔐 เข้าสู่ระบบ</button>
-        <button id="cloudLogout">ออกจากระบบ</button>
+        <button id="cloudShare" class="blue">🔗 คัดลอกลิงก์ใช้งาน</button>
+        <button id="cloudPull" class="good">↻ รีเฟรชข้อมูล</button>
       </div>
-      <div class="row" style="margin-top:6px">
-        <button id="cloudPull" class="good">↓ โหลดข้อมูลใหม่</button>
-        <button id="cloudPush" class="warn">↑ ส่งข้อมูลขึ้น Cloud</button><span id="rtState" class="badge">Realtime: ปิด</span>
-        
+      <div class="sub" style="margin-top:5px">
+        คอมอัปข้อมูล → มือถือรีเฟรชแล้วเห็น · มือถือบันทึก → คอมรีเฟรชแล้วเห็น<br>⚠ ส่งลิงก์เฉพาะคนทำงาน
       </div>
+      <span id="rtState" class="badge">Realtime: ปิด</span>
+    </div>
     </div>
     <div class="sub" style="margin-top:6px">
       Building schema: parcel_cod, b_code, b_type, b_chb, b_room, wide, long, lu, b_age, name, b_address, b_moo, photo, note
@@ -194,24 +193,24 @@ const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZ
 L.control.layers({'ดาวเทียม':sat,'ถนน':osm}).addTo(map);
 
 let db,currentOrgId=null,currentMode='view',showLabels=false;
-let cloudClient=null, cloudUser=null, cloudSyncing=false, realtimeChannel=null, realtimeTimer=null;
-const CLOUD_CFG_KEY='SOMPORN_SUPABASE_CFG_V1';
-function getCloudCfg(){
- try{return JSON.parse(localStorage.getItem(CLOUD_CFG_KEY)||'null');}catch(e){return null;}
-}
-function setCloudCfg(v){localStorage.setItem(CLOUD_CFG_KEY,JSON.stringify(v));}
-function cloudConfigured(){const c=getCloudCfg();return !!(c&&c.url&&c.key);}
+let cloudClient=null, cloudSyncing=false, realtimeChannel=null, realtimeTimer=null, autoPushTimer=null;
+const SOMPORN_SUPABASE_URL="https://xfplhehhpnfpwplopdrl.supabase.co";
+const SOMPORN_SUPABASE_KEY="sb_publishable_EmeY1Z-YpDmgBwBbRZB8gA_t0ginTSi";
+function getCloudCfg(){return {url:SOMPORN_SUPABASE_URL,key:SOMPORN_SUPABASE_KEY};}
 function cloudStatus(msg,online=false){
  const el=document.getElementById('cloudState'); if(!el)return;
  el.textContent=msg; el.className='cloudstate '+(online?'cloud-online':'cloud-offline');
 }
 function initCloudClient(){
- const cfg=getCloudCfg();
- if(!cfg||!cfg.url||!cfg.key){cloudClient=null;cloudStatus('☁ Shared Cloud: ยังไม่ได้ตั้งค่า');return false;}
  try{
-   cloudClient=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+   cloudClient=window.supabase.createClient(SOMPORN_SUPABASE_URL,SOMPORN_SUPABASE_KEY);
+   cloudStatus('☁ ฐานข้อมูลกลาง: เชื่อมต่อแล้ว',true);
    return true;
- }catch(e){cloudClient=null;cloudStatus('☁ Shared Cloud: ตั้งค่าไม่ถูกต้อง');return false;}
+ }catch(e){
+   cloudClient=null;
+   cloudStatus('☁ ฐานข้อมูลกลาง: เชื่อมต่อไม่สำเร็จ');
+   return false;
+ }
 }
 
 let parcelRecords=[], buildingRecords=[], surveyRecords=[];
@@ -234,15 +233,30 @@ function openDB(){return new Promise((res,rej)=>{
 });}
 async function all(name){return await reqP(store(name).getAll());}
 async function byOrg(name,orgId){return await reqP(store(name).index('orgId').getAll(IDBKeyRange.only(orgId)));}
+
+function scheduleAutoCloudPush(){
+ if(!cloudClient||cloudSyncing)return;
+ clearTimeout(autoPushTimer);
+ autoPushTimer=setTimeout(async()=>{
+   try{await cloudPushAll(true);}catch(e){console.error(e);}
+ },800);
+}
+
 async function putLocalOnly(name,obj){return await reqP(store(name,'readwrite').put(obj));}
 async function put(name,obj){
  const r=await putLocalOnly(name,obj);
- if(!cloudSyncing) cloudUpsertRecord(name,obj);
+ if(!cloudSyncing){
+   cloudUpsertRecord(name,obj);
+   scheduleAutoCloudPush();
+ }
  return r;
 }
 async function del(name,id){
  const r=await reqP(store(name,'readwrite').delete(id));
- if(!cloudSyncing) cloudDeleteRecord(name,id);
+ if(!cloudSyncing){
+   cloudDeleteRecord(name,id);
+   scheduleAutoCloudPush();
+ }
  return r;
 }
 
@@ -533,13 +547,7 @@ function openSurveyEdit(s){
 }
 
 
-async function refreshCloudSession(){
- if(!initCloudClient())return;
- const {data:{session}}=await cloudClient.auth.getSession();
- cloudUser=session?.user||null;
- if(cloudUser) cloudStatus('☁ ออนไลน์: '+(cloudUser.email||'ผู้ใช้'),true);
- else cloudStatus('☁ พร้อมเชื่อมต่อ · กรุณาเข้าสู่ระบบ');
-}
+
 
 
 async function stopRealtime(){
@@ -551,7 +559,7 @@ async function stopRealtime(){
 }
 
 async function startRealtime(){
- if(!cloudClient||!cloudUser)return;
+ if(!cloudClient)return;
  await stopRealtime();
  const el=document.getElementById('rtState');if(el)el.textContent='Realtime: กำลังเชื่อม...';
 
@@ -578,40 +586,18 @@ async function startRealtime(){
    });
 }
 
-async function cloudLoginDialog(){
- if(!initCloudClient())return alert('กรุณาตั้งค่า Supabase ก่อน');
- const body=fieldHtml('อีเมล','cl_email')+fieldHtml('รหัสผ่าน','cl_pass','','password')+
- `<div class="sub">ถ้ายังไม่มีบัญชี กด “สมัครบัญชี” ด้านล่าง แล้วตรวจอีเมลยืนยันตามการตั้งค่า Supabase</div>
- <div class="row" style="margin-top:8px"><button id="cl_signup" class="warn">สมัครบัญชี</button></div>`;
- openModal('เข้าสู่ระบบ Cloud',body,async()=>{
-   const email=document.getElementById('cl_email').value.trim();
-   const password=document.getElementById('cl_pass').value;
-   const {data,error}=await cloudClient.auth.signInWithPassword({email,password});
-   if(error)return alert(error.message);
-   cloudUser=data.user;closeModal();await refreshCloudSession();await cloudPullAll();await startRealtime();
- });
- setTimeout(()=>{
-   const b=document.getElementById('cl_signup');
-   if(b)b.onclick=async()=>{
-     const email=document.getElementById('cl_email').value.trim();
-     const password=document.getElementById('cl_pass').value;
-     const {error}=await cloudClient.auth.signUp({email,password});
-     if(error)return alert(error.message);
-     alert('สมัครแล้ว กรุณาตรวจอีเมลยืนยัน (ถ้าโครงการเปิด Confirm email) แล้วค่อยเข้าสู่ระบบ');
-   };
- },0);
-}
 
-async function cloudPushAll(){
+
+async function cloudPushAll(silent=false){
  if(cloudSyncing)return;
- if(!cloudClient||!cloudUser)return alert('กรุณาเข้าสู่ระบบ Cloud ก่อน');
+ if(!cloudClient)return alert('ยังไม่ได้ตั้งค่าฐานข้อมูลกลาง');
  cloudSyncing=true;
  try{
    const orgs=await all('orgs'), layers=await all('layers'), buildings=await all('buildings'), surveys=await all('surveys');
 
    // orgs: owner pushes/creates workspaces
    for(const o of orgs){
-     const {error}=await cloudClient.from('orgs').upsert({id:o.id,name:o.name,owner_id:cloudUser.id,updated_at:new Date().toISOString()},{onConflict:'id'});
+     const {error}=await cloudClient.from('orgs').upsert({id:o.id,name:o.name,owner_id:null,updated_at:new Date().toISOString()},{onConflict:'id'});
      if(error && !String(error.message).toLowerCase().includes('row-level')) throw error;
    }
    for(const r of layers){
@@ -636,13 +622,13 @@ async function cloudPushAll(){
    }
    cloudStatus(`☁ ซิงก์ขึ้น Cloud แล้ว · ${buildings.length} สิ่งปลูกสร้าง · ${surveys.length} จุดสำรวจ`,true);
  }catch(e){
-   alert('ส่งขึ้น Cloud ไม่สำเร็จ: '+(e.message||e));
+   if(!silent)alert('ส่งขึ้น Cloud ไม่สำเร็จ: '+(e.message||e));
  }finally{cloudSyncing=false;}
 }
 
 async function cloudPullAll(silent=false){
  if(cloudSyncing)return;
- if(!cloudClient||!cloudUser)return alert('กรุณาเข้าสู่ระบบ Cloud ก่อน');
+ if(!cloudClient)return alert('ยังไม่ได้ตั้งค่าฐานข้อมูลกลาง');
  cloudSyncing=true;
  try{
    const [oR,lR,bR,sR]=await Promise.all([
@@ -678,7 +664,7 @@ async function cloudPullAll(silent=false){
 }
 
 async function cloudUpsertRecord(name,obj){
- if(!cloudClient||!cloudUser||cloudSyncing)return;
+ if(!cloudClient||cloudSyncing)return;
  try{
    if(name==='buildings'){
      const {error}=await cloudClient.from('buildings').upsert({
@@ -695,7 +681,7 @@ async function cloudUpsertRecord(name,obj){
      },{onConflict:'id'}); if(error)throw error;
    }else if(name==='orgs'){
      const {error}=await cloudClient.from('orgs').upsert({
-       id:obj.id,name:obj.name,owner_id:cloudUser.id,updated_at:new Date().toISOString()
+       id:obj.id,name:obj.name,owner_id:null,updated_at:new Date().toISOString()
      },{onConflict:'id'}); if(error)throw error;
    }
    cloudStatus('☁ บันทึกขึ้น Cloud แล้ว',true);
@@ -705,28 +691,14 @@ async function cloudUpsertRecord(name,obj){
  }
 }
 async function cloudDeleteRecord(name,id){
- if(!cloudClient||!cloudUser||cloudSyncing)return;
+ if(!cloudClient||cloudSyncing)return;
  const table=name==='buildings'?'buildings':name==='surveys'?'surveys':name==='layers'?'layers':name==='orgs'?'orgs':null;
  if(!table)return;
  const {error}=await cloudClient.from(table).delete().eq('id',id);
  if(error){console.error(error);cloudStatus('☁ ลบในเครื่องแล้ว แต่ Cloud มีปัญหา');}
 }
 
-async function cloudAddMemberDialog(){
- if(!cloudClient||!cloudUser)return alert('กรุณาเข้าสู่ระบบ Cloud ก่อน');
- if(!currentOrgId)return alert('กรุณาเลือก อปท.');
- const body=fieldHtml('อีเมลทีมงาน','cm_email')+
- selectHtml('สิทธิ์','cm_role',['worker','viewer'],'worker')+
- `<div class="sub">worker = เพิ่ม/แก้ไขงานสำรวจได้ · viewer = ดูอย่างเดียว</div>`;
- openModal('เพิ่มทีมงานเข้า อปท.',body,async()=>{
-   const email=document.getElementById('cm_email').value.trim().toLowerCase();
-   const role=document.getElementById('cm_role').value;
-   if(!email)return alert('กรุณากรอกอีเมล');
-   const {error}=await cloudClient.from('org_members').upsert({org_id:currentOrgId,member_email:email,role},{onConflict:'org_id,member_email'});
-   if(error)return alert(error.message);
-   closeModal();alert('เพิ่มทีมงานแล้ว: '+email);
- });
-}
+
 
 map.on('click',e=>{
  if(currentMode==='building-add'){const h=findParcelAt(e.latlng);if(!h)return alert('จุดนี้อยู่นอกแปลงที่ดิน');openBuildingAdd(e.latlng,h);}
@@ -933,32 +905,39 @@ document.getElementById('restoreAll').addEventListener('change',async e=>{
 });
 
 
-document.getElementById('cloudConfig').onclick=()=>{
- const c=getCloudCfg()||{};
- const body=fieldHtml('Supabase Project URL','cc_url',c.url||'')+
- fieldHtml('Publishable / anon key','cc_key',c.key||'')+
- `<div class="sub">ห้ามใส่ service_role key ในเว็บนี้</div>`;
- openModal('ตั้งค่า Shared Cloud',body,async()=>{
-   const url=document.getElementById('cc_url').value.trim();
-   const key=document.getElementById('cc_key').value.trim();
-   if(!url||!key)return alert('กรอก URL และ Key ให้ครบ');
-   setCloudCfg({url,key});closeModal();await refreshCloudSession();
- });
+document.getElementById('cloudShare').onclick=async()=>{
+ const link=location.origin+location.pathname;
+ try{
+   await navigator.clipboard.writeText(link);
+   alert('คัดลอกลิงก์แล้ว ส่งให้น้องเปิดใช้งานได้เลย');
+ }catch(e){
+   prompt('คัดลอกลิงก์นี้ส่งให้น้อง',link);
+ }
 };
-document.getElementById('cloudLogin').onclick=cloudLoginDialog;
-document.getElementById('cloudLogout').onclick=async()=>{
- await stopRealtime();
- if(cloudClient)await cloudClient.auth.signOut();
- cloudUser=null;cloudStatus('☁ ออกจากระบบแล้ว');
-};
-document.getElementById('cloudPull').onclick=cloudPullAll;
-document.getElementById('cloudPush').onclick=cloudPushAll;
+document.getElementById('cloudPull').onclick=()=>cloudPullAll(false);
+
+document.addEventListener('visibilitychange',async()=>{
+ if(document.visibilityState==='visible' && cloudClient && !cloudSyncing){
+   try{await cloudPullAll(true);}catch(e){console.error(e);}
+ }
+});
+window.addEventListener('focus',async()=>{
+ if(cloudClient && !cloudSyncing){
+   try{await cloudPullAll(true);}catch(e){console.error(e);}
+ }
+});
+setInterval(async()=>{
+ if(cloudClient && !cloudSyncing && document.visibilityState==='visible'){
+   try{await cloudPullAll(true);}catch(e){console.error(e);}
+ }
+},15000);
 
 (async()=>{
  await openDB();
  await refreshOrgs();
- await refreshCloudSession();
- if(cloudUser){try{await cloudPullAll();await startRealtime();}catch(e){}}
+ if(initCloudClient()){
+   try{await cloudPullAll(true);await startRealtime();}catch(e){console.error(e);}
+ }
 })();
 </script>
 </body>
