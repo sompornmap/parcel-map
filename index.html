@@ -52,10 +52,65 @@ button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;backgr
  #search{min-width:140px;flex-basis:55%}
 }
 </style>
+
+<style>
+.top-search{
+  position:sticky;
+  top:0;
+  z-index:1000;
+  background:#ffffff;
+  padding:8px 0 10px;
+  margin-bottom:8px;
+  border-bottom:1px solid #e2e8f0;
+}
+.top-search .section-title{
+  font-size:13px;
+  font-weight:700;
+  margin-bottom:5px;
+}
+.top-search .row{
+  display:flex;
+  gap:6px;
+}
+.top-search input{
+  flex:1;
+  min-width:0;
+  font-size:16px;
+  padding:10px 11px;
+  border:1px solid #94a3b8;
+  border-radius:8px;
+}
+.top-search button{
+  min-width:74px;
+}
+#map{
+  background:#dbeafe;
+}
+@media (max-width:700px){
+  .top-search{padding-top:4px}
+  .top-search input{font-size:16px}
+}
+</style>
+
 </head>
 <body>
 <div id="app">
 <aside id="sidebar">
+
+<div class="top-search">
+  <div class="section-title">🔎 ค้นหารหัสแปลงที่ดิน</div>
+  <div class="row">
+    <input id="search" placeholder="พิมพ์รหัสแปลง เช่น 02B019">
+    <button id="searchBtn" class="blue">ค้นหา</button>
+  </div>
+</div>
+
+<div class="row" style="margin-bottom:6px">
+  <button id="satelliteBtn" class="blue">🛰 ดาวเทียม</button>
+  <button id="roadBtn">🗺 ถนน</button>
+</div>
+
+
   <div id="brand">
     <h2>SOMPORN Multi-Org Parcel V16</h2>
     <div class="sub">แปลงที่ดิน + สิ่งปลูกสร้าง + จุดสถานะสำรวจ</div>
@@ -97,13 +152,14 @@ button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;backgr
       <input id="restoreAll" type="file" accept=".json" style="display:none">
     </div>
     <div class="cloudbox">
-      <div id="cloudState" class="cloudstate cloud-offline">☁ ฐานข้อมูลกลาง: กำลังเชื่อมต่อ...</div>
+      <div id="cloudState" class="cloudstate cloud-offline">☁ ฐานข้อมูลกลาง: ยังไม่ได้ตั้งค่า</div>
       <div class="row">
+        <button id="cloudConfig">⚙ ตั้งค่าฐานข้อมูลครั้งแรก</button>
         <button id="cloudShare" class="blue">🔗 คัดลอกลิงก์ใช้งาน</button>
         <button id="cloudPull" class="good">↻ รีเฟรชข้อมูล</button>
       </div>
       <div class="sub" style="margin-top:5px">
-        คอมอัปข้อมูล → มือถือรีเฟรชแล้วเห็น · มือถือบันทึก → คอมรีเฟรชแล้วเห็น<br>⚠ ส่งลิงก์เฉพาะคนทำงาน
+        ใช้งานปกติไม่ต้องกดอะไร: คอมบันทึก → ขึ้นกลางอัตโนมัติ · มือถือรีเฟรช → เห็นข้อมูล · มือถือบันทึก → คอมรีเฟรช → เห็นข้อมูล
       </div>
       <span id="rtState" class="badge">Realtime: ปิด</span>
     </div>
@@ -127,8 +183,7 @@ button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;backgr
   <div id="topbar">
     <div class="row">
       <button id="menuBtn">☰</button>
-      <input id="search" placeholder="ค้นหารหัสแปลง / เลขแปลง / รหัสสิ่งปลูกสร้าง">
-      <button id="btnSearch" class="primary">ค้นหา</button>
+      
       <button id="btnMe">📍 ฉัน</button>
     </div>
     <div id="status">พร้อมใช้งาน</div>
@@ -188,29 +243,58 @@ function simpleNamedSelectHtml(label,id,values,val=''){
 
 
 const map=L.map('map',{preferCanvas:true}).setView([13.7,100.5],9);
+const esriSatellite=L.tileLayer(
+ 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+ {maxZoom:22,attribution:'Tiles © Esri'}
+);
+const osmBase=(typeof osmBase!=='undefined')?osmBase:L.tileLayer(
+ 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+ {maxZoom:22,attribution:'© OpenStreetMap'}
+);
+esriSatellite.addTo(map);
+L.control.layers(
+ {'ดาวเทียม Esri':esriSatellite,'แผนที่ถนน OSM':osmBase},
+ {},
+ {position:'topright'}
+).addTo(map);
+
 const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,attribution:'Imagery © Esri'}).addTo(map);
-const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,attribution:'© OpenStreetMap'});
-L.control.layers({'ดาวเทียม':sat,'ถนน':osm}).addTo(map);
+const osm=const osmBase=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'© OpenStreetMap'});
 
 let db,currentOrgId=null,currentMode='view',showLabels=false;
 let cloudClient=null, cloudSyncing=false, realtimeChannel=null, realtimeTimer=null, autoPushTimer=null;
-const SOMPORN_SUPABASE_URL="https://xfplhehhpnfpwplopdrl.supabase.co";
-const SOMPORN_SUPABASE_KEY="sb_publishable_EmeY1Z-YpDmgBwBbRZB8gA_t0ginTSi";
-function getCloudCfg(){return {url:SOMPORN_SUPABASE_URL,key:SOMPORN_SUPABASE_KEY};}
+const CLOUD_CFG_KEY='SOMPORN_SHARED_CLOUD_CFG_V1';
+function getCloudCfg(){
+ try{return JSON.parse(localStorage.getItem(CLOUD_CFG_KEY)||'null');}catch(e){return null;}
+}
+function setCloudCfg(v){localStorage.setItem(CLOUD_CFG_KEY,JSON.stringify(v));}
 function cloudStatus(msg,online=false){
  const el=document.getElementById('cloudState'); if(!el)return;
  el.textContent=msg; el.className='cloudstate '+(online?'cloud-online':'cloud-offline');
 }
-function initCloudClient(){
+function bootstrapCloudFromLink(){
  try{
-   cloudClient=window.supabase.createClient(SOMPORN_SUPABASE_URL,SOMPORN_SUPABASE_KEY);
+   const u=new URL(location.href);
+   const url=u.searchParams.get('sburl');
+   const key=u.searchParams.get('sbkey');
+   if(url&&key){
+     setCloudCfg({url,key});
+     u.searchParams.delete('sburl');u.searchParams.delete('sbkey');
+     history.replaceState({},'',u.toString());
+     return true;
+   }
+ }catch(e){}
+ return false;
+}
+function initCloudClient(){
+ bootstrapCloudFromLink();
+ const cfg=getCloudCfg();
+ if(!cfg||!cfg.url||!cfg.key){cloudClient=null;cloudStatus('☁ ฐานข้อมูลกลาง: ยังไม่ได้ตั้งค่า');return false;}
+ try{
+   cloudClient=window.supabase.createClient(cfg.url,cfg.key);
    cloudStatus('☁ ฐานข้อมูลกลาง: เชื่อมต่อแล้ว',true);
    return true;
- }catch(e){
-   cloudClient=null;
-   cloudStatus('☁ ฐานข้อมูลกลาง: เชื่อมต่อไม่สำเร็จ');
-   return false;
- }
+ }catch(e){cloudClient=null;cloudStatus('☁ ฐานข้อมูลกลาง: ตั้งค่าไม่ถูกต้อง');return false;}
 }
 
 let parcelRecords=[], buildingRecords=[], surveyRecords=[];
@@ -758,6 +842,9 @@ function doSearch(){
 
  document.getElementById('status').textContent=`พบ ${hits.length} รายการ · แสดงรายการที่ตรงที่สุด`;
 }
+document.getElementById('searchBtn').onclick=doSearch;
+document.getElementById('search').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
+
 document.getElementById('btnSearch').onclick=doSearch;
 document.getElementById('search').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
 document.getElementById('btnMe').onclick=()=>navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude];map.setView(ll,19);L.circleMarker(ll,{radius:7,weight:3,fillOpacity:1}).addTo(map).bindPopup('ตำแหน่งฉัน').openPopup();},()=>alert('กรุณาอนุญาต Location'),{enableHighAccuracy:true});
@@ -905,11 +992,30 @@ document.getElementById('restoreAll').addEventListener('change',async e=>{
 });
 
 
+document.getElementById('cloudConfig').onclick=()=>{
+ const c=getCloudCfg()||{};
+ const body=fieldHtml('Supabase Project URL','cc_url',c.url||'')+
+ fieldHtml('Publishable / anon key','cc_key',c.key||'')+
+ `<div class="sub">ตั้งครั้งเดียวบนคอมหลัก แล้วกด “คัดลอกลิงก์ใช้งาน” ส่งให้น้อง</div>`;
+ openModal('ตั้งค่าฐานข้อมูลกลาง',body,async()=>{
+   const url=document.getElementById('cc_url').value.trim();
+   const key=document.getElementById('cc_key').value.trim();
+   if(!url||!key)return alert('กรอก URL และ Key ให้ครบ');
+   setCloudCfg({url,key});closeModal();
+   initCloudClient();
+   try{await cloudPullAll(true);await startRealtime();}catch(e){console.error(e);}
+ });
+};
 document.getElementById('cloudShare').onclick=async()=>{
- const link=location.origin+location.pathname;
+ const c=getCloudCfg();
+ if(!c||!c.url||!c.key)return alert('กรุณาตั้งค่าฐานข้อมูลกลางก่อน');
+ const u=new URL(location.href);
+ u.searchParams.set('sburl',c.url);
+ u.searchParams.set('sbkey',c.key);
+ const link=u.toString();
  try{
    await navigator.clipboard.writeText(link);
-   alert('คัดลอกลิงก์แล้ว ส่งให้น้องเปิดใช้งานได้เลย');
+   alert('คัดลอกลิงก์ใช้งานแล้ว ส่งลิงก์นี้ให้น้องได้เลย');
  }catch(e){
    prompt('คัดลอกลิงก์นี้ส่งให้น้อง',link);
  }
@@ -939,6 +1045,16 @@ setInterval(async()=>{
    try{await cloudPullAll(true);await startRealtime();}catch(e){console.error(e);}
  }
 })();
+
+if(document.getElementById('satelliteBtn'))document.getElementById('satelliteBtn').onclick=()=>{
+ if(map.hasLayer(osmBase))map.removeLayer(osmBase);
+ if(!map.hasLayer(esriSatellite))esriSatellite.addTo(map);
+};
+if(document.getElementById('roadBtn'))document.getElementById('roadBtn').onclick=()=>{
+ if(map.hasLayer(esriSatellite))map.removeLayer(esriSatellite);
+ if(!map.hasLayer(osmBase))osmBase.addTo(map);
+};
+
 </script>
 </body>
 </html>
