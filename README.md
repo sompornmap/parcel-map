@@ -1,21 +1,15 @@
-# SOMPORN FINAL V4
+# SOMPORN MOBILE CLOUD V5 READY
 
-เวอร์ชันจบสำหรับใช้งานบนคอมและมือถือ
+Supabase URL + Publishable Key ถูกฝังไว้ใน index.html แล้ว
+ผู้ใช้งานไม่ต้องกรอกค่า Cloud อีก
 
-ฟังก์ชัน:
-- เพิ่ม / ลบ / เลือก อปท.
-- ดาวเทียม Esri / OSM / GPS
-- เมนูมือถือ เปิด-ปิดง่าย
-- นำเข้า KML / JSON / GeoJSON พร้อมแจ้งจำนวน
-- ค้นหารหัสแปลง / รหัสสิ่งปลูกสร้าง
-- แสดง/ซ่อนรหัสแปลง
-- แก้ไข/ลบแปลงที่ดิน
-- เพิ่ม/แก้ไข/ลบสิ่งปลูกสร้าง
-- นำทาง Google Maps
-- เพิ่ม/แก้ไข/ลบจุดสถานะสำรวจ
-- Export CSV สิ่งปลูกสร้าง / สำรวจ / รวม
-- Backup / Restore JSON
-- ลบชั้นข้อมูล
+การทำงาน:
+- เปิดเว็บ -> เชื่อม Cloud อัตโนมัติ
+- คอมนำเข้า KML/GeoJSON -> ส่งขึ้น Cloud ทันที
+- มือถือเปิด/รีเฟรช -> โหลดข้อมูลกลาง
+- มือถือเพิ่ม/แก้ไข/ลบ -> ส่งขึ้น Cloud
+- คอมรีเฟรช -> เห็นข้อมูลล่าสุด
+- Export CSV จากคอม
 
-ใช้งาน GitHub Pages:
-อัปโหลด index.html + .nojekyll ไปที่ root ของ repository
+ถ้าฐาน Supabase ยังไม่มีตาราง somporn_shared_state:
+Run SOMPORN_SETUP_CLOUD.sql หนึ่งครั้งใน Supabase SQL Editor
