@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SOMPORN Parcel MOBILE CLOUD V6 DIAG</title>
+<title>SOMPORN Parcel MOBILE CLOUD V10 ORG-SAFE</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box} html,body{height:100%;margin:0;font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;color:#17202a}
@@ -103,11 +103,11 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
     </div>
   </div>
 
-  <h2>SOMPORN Parcel MOBILE CLOUD V6 DIAG</h2>
+  <h2>SOMPORN Parcel MOBILE CLOUD V10 ORG-SAFE</h2>
   <div class="sub">ระบบแปลงที่ดิน + สิ่งปลูกสร้าง + จุดสำรวจ</div>
 
   <div class="section">
-    <div class="field"><label>อปท.</label><select id="orgSelect"></select></div>
+    <div class="field"><label>อปท.</label><select id="orgSelect"></select><div id="orgSummary" class="sub" style="margin-top:4px"></div></div>
     <div class="row"><input id="newOrgName" class="grow" placeholder="ชื่อ อปท. ใหม่"><button id="addOrg" class="good">+ เพิ่ม</button></div>
   </div>
 
@@ -148,11 +148,11 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
 </div>
 
 
-  <div class="section"><b style="font-size:12px">ชั้นข้อมูล</b><div id="layerList"></div></div>
+  <div class="section"><b style="font-size:12px">ชั้นข้อมูล</b><div id="buildCount" class="sub" style="margin:5px 0"></div><div id="layerList"></div></div>
 </aside>
 
 <main id="mapWrap">
-  <div id="versionBadge" style="position:absolute;right:10px;top:10px;z-index:1300;background:#111827;color:#fff;padding:6px 8px;border-radius:8px;font-size:11px">V6 DIAG</div>
+  <div id="versionBadge" style="position:absolute;right:10px;top:10px;z-index:1300;background:#111827;color:#fff;padding:6px 8px;border-radius:8px;font-size:11px">V10 ORG-SAFE</div>
   <div id="cloudBadge" style="position:absolute;right:10px;top:42px;z-index:1300;background:#fff7e6;color:#8a5a00;padding:6px 8px;border-radius:8px;font-size:11px;max-width:70vw;box-shadow:0 1px 6px #0002">☁ กำลังตรวจ Cloud...</div>
   <button id="topMobile">☰ เมนู</button>
   <div id="map"></div>
@@ -181,8 +181,8 @@ const DB_NAME='SOMPORN_CLEAN_V2_DB';
 const DB_VERSION=1;
 let db=null,currentOrgId=null,mode='view',showLabels=false;
 let layers=[],buildings=[],surveys=[],parcelLeaflets=[],searchIndex=[];
-let activeModal=null;
-let cloudClient=null, cloudReady=false, cloudBusy=false, cloudTimer=null;
+let activeModal=null, searchPin=null;
+let cloudClient=null, cloudReady=false, cloudBusy=false, cloudTimer=null, localDirty=false, cloudWriteLock=false;
 const FIXED_SUPABASE_URL='https://xfplhehhpnfpwplopdrl.supabase.co';
 const FIXED_SUPABASE_KEY='sb_publishable_EmeY1Z-YpDmgBwBbRZB8gA_t0ginTSi';
 
@@ -277,23 +277,55 @@ function sel(label,id,mapObj,val=''){
 
 
 
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+async function waitCloudIdle(maxMs=12000){
+  const started=Date.now();
+  while(cloudBusy && Date.now()-started<maxMs) await sleep(120);
+  return !cloudBusy;
+}
+function markLocalDirty(){
+  localDirty=true;
+  cloudWriteLock=true;
+}
+function clearLocalDirty(){
+  localDirty=false;
+  cloudWriteLock=false;
+}
+async function forcePushCloud(){
+  markLocalDirty();
+  await waitCloudIdle();
+  const ok=await pushCloud();
+  if(ok) clearLocalDirty();
+  return ok;
+}
+
+
 function cloudErrorText(e){
   const m=String(e?.message||e||'');
-  if(/relation .*somporn_shared_state.* does not exist/i.test(m) || /Could not find the table/i.test(m))
-    return '❌ Cloud ยังไม่มีตาราง somporn_shared_state — ต้อง Run SOMPORN_SETUP_CLOUD.sql 1 ครั้ง';
+  if(/relation .*somporn_org_state.* does not exist/i.test(m) || /Could not find the table/i.test(m))
+    return '❌ Cloud ยังไม่มีตาราง somporn_org_state — Run SQL V10 หนึ่งครั้ง';
   if(/row-level security|permission denied|policy/i.test(m))
-    return '❌ Cloud ถูกบล็อกสิทธิ์ RLS — ต้อง Run SOMPORN_SETUP_CLOUD.sql ให้ครบ';
+    return '❌ Cloud ถูกบล็อกสิทธิ์ RLS — Run SQL V10 ให้ครบ';
   if(/Failed to fetch|NetworkError|fetch/i.test(m))
     return '❌ ติดต่อ Cloud ไม่ได้ — ตรวจอินเทอร์เน็ต';
   return '❌ Cloud: '+m;
 }
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+async function waitCloudIdle(maxMs=12000){
+  const started=Date.now();
+  while(cloudBusy && Date.now()-started<maxMs) await sleep(120);
+  return !cloudBusy;
+}
+function markLocalDirty(){localDirty=true;cloudWriteLock=true}
+function clearLocalDirty(){localDirty=false;cloudWriteLock=false}
 
 async function cloudHealthCheck(){
   if(!cloudReady)return false;
   try{
-    const {data,error}=await cloudClient.from('somporn_shared_state').select('id,updated_at').limit(1);
+    const {error}=await cloudClient.from('somporn_org_state').select('org_id,updated_at').limit(1);
     if(error)throw error;
-    cloudMsg('✅ Cloud พร้อมใช้งาน'+(data?.length?' · มีข้อมูลกลางแล้ว':' · ยังไม่มีข้อมูลกลาง'),true);
+    cloudMsg('✅ Cloud แบบแยก อบต. พร้อมใช้งาน',true);
     return true;
   }catch(e){
     cloudMsg(cloudErrorText(e),false);
@@ -301,36 +333,33 @@ async function cloudHealthCheck(){
   }
 }
 
-async function pushCloud(){
-  if(!cloudReady)return false;
-  if(cloudBusy)return false;
+async function pushOrgCloud(orgId=currentOrgId){
+  if(!cloudReady || !orgId)return false;
+  if(cloudBusy){
+    const idle=await waitCloudIdle();
+    if(!idle)return false;
+  }
   cloudBusy=true;
   try{
-    const orgs=await all('orgs');
-    const ls=await all('layers');
-    const bs=await all('buildings');
-    const ss=await all('surveys');
+    const os=await all('orgs');
+    const org=os.find(o=>o.id===orgId);
+    if(!org)throw new Error('ไม่พบ อบต. ที่จะซิงก์');
+
+    const ls=await byOrg('layers',orgId);
+    const bs=await byOrg('buildings',orgId);
+    const ss=await byOrg('surveys',orgId);
     const featureCount=ls.reduce((n,x)=>n+(x.geo?.features?.length||0),0);
 
-    cloudMsg(`☁ กำลังส่งขึ้น Cloud · ${featureCount.toLocaleString('th-TH')} แปลง...`);
+    cloudMsg(`☁ กำลังซิงก์ ${org.name} · ${featureCount.toLocaleString('th-TH')} แปลง...`);
     const payload={
-      id:'shared',
+      org_id:orgId,
+      org_name:org.name,
       updated_at:new Date().toISOString(),
-      data:{orgs,layers:ls,buildings:bs,surveys:ss}
+      data:{org,layers:ls,buildings:bs,surveys:ss}
     };
-    const {error}=await cloudClient.from('somporn_shared_state').upsert(payload,{onConflict:'id'});
+    const {error}=await cloudClient.from('somporn_org_state').upsert(payload,{onConflict:'org_id'});
     if(error)throw error;
-
-    // Verify the row can be read back.
-    const {data:verify,error:verifyErr}=await cloudClient
-      .from('somporn_shared_state')
-      .select('updated_at,data')
-      .eq('id','shared')
-      .maybeSingle();
-    if(verifyErr)throw verifyErr;
-    const cloudLayers=verify?.data?.layers||[];
-    const cloudFeatures=cloudLayers.reduce((n,x)=>n+(x.geo?.features?.length||0),0);
-    cloudMsg(`✅ Cloud บันทึกแล้วจริง · ${cloudFeatures.toLocaleString('th-TH')} แปลง · สิ่งปลูกสร้าง ${(verify?.data?.buildings||[]).length}`,true);
+    cloudMsg(`✅ ${org.name} ซิงก์ Cloud แล้ว · ${featureCount.toLocaleString('th-TH')} แปลง`,true);
     return true;
   }catch(e){
     cloudMsg(cloudErrorText(e),false);
@@ -340,60 +369,69 @@ async function pushCloud(){
   }
 }
 
-async function pullCloud(silent=false){
-  if(!cloudReady)return false;
+async function pullOrgCloud(orgId=currentOrgId,silent=false){
+  if(!cloudReady || !orgId)return false;
+  if(localDirty || cloudWriteLock)return false;
   if(cloudBusy)return false;
   cloudBusy=true;
   try{
-    const {data,error}=await cloudClient
-      .from('somporn_shared_state')
-      .select('data,updated_at')
-      .eq('id','shared')
-      .maybeSingle();
+    const {data,error}=await cloudClient.from('somporn_org_state')
+      .select('org_id,org_name,data,updated_at')
+      .eq('org_id',orgId).maybeSingle();
     if(error)throw error;
-
     if(!data?.data){
-      if(!silent)cloudMsg('⚠ Cloud พร้อม แต่ยังไม่มีข้อมูลกลาง ให้คอมนำเข้าข้อมูลก่อน');
+      if(!silent)cloudMsg('⚠ อบต. นี้ยังไม่มีข้อมูลกลาง');
       return false;
     }
-
     const p=data.data;
-    // IMPORTANT: local cache is replaced by shared cloud snapshot.
-    await clearStore('orgs');
-    await clearStore('layers');
-    await clearStore('buildings');
-    await clearStore('surveys');
 
-    // Direct IndexedDB writes are safe because put() here has no cloud side effect.
-    for(const x of p.orgs||[])await put('orgs',x);
+    // Replace only this org, never other orgs.
+    const oldLayers=await byOrg('layers',orgId);
+    const oldBuildings=await byOrg('buildings',orgId);
+    const oldSurveys=await byOrg('surveys',orgId);
+    for(const x of oldLayers)await del('layers',x.id);
+    for(const x of oldBuildings)await del('buildings',x.id);
+    for(const x of oldSurveys)await del('surveys',x.id);
+
+    if(p.org)await put('orgs',p.org);
     for(const x of p.layers||[])await put('layers',x);
     for(const x of p.buildings||[])await put('buildings',x);
     for(const x of p.surveys||[])await put('surveys',x);
 
-    currentOrgId=null;
-    await refreshOrgs();
-
-    const featureCount=(p.layers||[]).reduce((n,x)=>n+(x.geo?.features?.length||0),0);
-    cloudMsg(`✅ โหลดจาก Cloud แล้ว · ${featureCount.toLocaleString('th-TH')} แปลง · สิ่งปลูกสร้าง ${(p.buildings||[]).length}`,true);
+    currentOrgId=orgId;
+    document.getElementById('orgSelect').value=orgId;
+    await reload();
+    const fc=(p.layers||[]).reduce((n,x)=>n+(x.geo?.features?.length||0),0);
+    cloudMsg(`✅ โหลด ${data.org_name||'อบต.'} แล้ว · ${fc.toLocaleString('th-TH')} แปลง`,true);
     return true;
   }catch(e){
     if(!silent)cloudMsg(cloudErrorText(e),false);
-    else {
-      const msg=cloudErrorText(e);
-      if(msg.includes('ไม่มีตาราง') || msg.includes('RLS'))cloudMsg(msg,false);
-    }
     return false;
   }finally{
     cloudBusy=false;
   }
 }
 
-function scheduleCloudPush(){
-  if(!cloudReady)return;
-  clearTimeout(cloudTimer);
-  cloudTimer=setTimeout(()=>pushCloud(),700);
+async function pullCloud(silent=false){return pullOrgCloud(currentOrgId,silent)}
+async function pushCloud(){return pushOrgCloud(currentOrgId)}
+async function forcePushCloud(){
+  markLocalDirty();
+  await waitCloudIdle();
+  const ok=await pushOrgCloud(currentOrgId);
+  if(ok)clearLocalDirty();
+  return ok;
 }
-
+function scheduleCloudPush(){
+  if(!cloudReady || !currentOrgId)return;
+  const orgId=currentOrgId;
+  clearTimeout(cloudTimer);
+  cloudTimer=setTimeout(async()=>{
+    markLocalDirty();
+    await waitCloudIdle();
+    const ok=await pushOrgCloud(orgId);
+    if(ok)clearLocalDirty();
+  },500);
+}
 
 function parseKML(txt){
  const xml=new DOMParser().parseFromString(txt,'text/xml');const fs=[];
@@ -439,9 +477,14 @@ function nextBuildCode(pc){
 function popupParcel(f,l){
  const p=f.properties||{},pc=normalizeCode(parcelCode(f))||'-';
  let center=null;try{center=l.getBounds().getCenter()}catch(e){}
+ const layerRec=layers.find(r=>r.geo?.features?.includes(f));
+ const layerId=layerRec?.id||'';
  return `<b>รหัสแปลง: ${esc(pc)}</b><br>`+
  Object.entries(p).slice(0,8).map(([k,v])=>`${esc(k)}: ${esc(v)}<br>`).join('')+
- (center?`<div class="popup-actions"><button onclick="navTo(${center.lat},${center.lng})">🧭 นำทาง</button></div>`:'');
+ `<div class="popup-actions">`+
+ (center?`<button onclick="navTo(${center.lat},${center.lng})">🧭 นำทาง</button>`:'')+
+ (layerId?`<button onclick="deleteParcelFromLayer('${layerId}','${String(pc).replace(/'/g,"\'")}')" class="danger">🗑 ลบแปลง</button>`:'')+
+ `</div>`;
 }
 function popupBuild(b){
  return `<b>${esc(b.buildingCode)}</b><br>แปลง: ${esc(b.parcelCode)}<br>ประเภท: ${esc(TYPE_MAP[b.b_type]||'-')}<br>ลักษณะ: ${esc(MAT_MAP[b.b_chb]||'-')}<br>ใช้ประโยชน์: ${esc(USE_MAP[b.lu]||'-')}
@@ -450,7 +493,37 @@ function popupBuild(b){
 window.navTo=(lat,lng)=>window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,'_blank');
 window.navBuild=id=>{const b=buildings.find(x=>x.id===id);if(b)navTo(b.lat,b.lng)};
 window.editBuild=id=>{const b=buildings.find(x=>x.id===id);if(b)openBuildEdit(b)};
-window.removeBuild=async id=>{const b=buildings.find(x=>x.id===id);if(!b)return;if(confirm('ยืนยันลบ '+b.buildingCode+' ?')){await del('buildings',id);await reload();status('✅ ลบสิ่งปลูกสร้างแล้ว');scheduleCloudPush()}};
+window.removeBuild=async id=>{const b=buildings.find(x=>x.id===id);if(!b)return;if(confirm('ยืนยันลบ '+b.buildingCode+' ?')){
+ markLocalDirty();await del('buildings',id);await reload();
+ status('✅ ลบสิ่งปลูกสร้างแล้ว · กำลังซิงก์ Cloud');
+ setTimeout(async()=>{const ok=await forcePushCloud();status(ok?'✅ ลบและซิงก์ Cloud แล้ว':'⚠ รอ Cloud ซิงก์อัตโนมัติ')},50);
+}};
+
+
+window.deleteLayerById=async function(id){
+ const r=layers.find(x=>x.id===id);
+ if(!r)return alert('ไม่พบชั้นข้อมูล');
+ if(!confirm(`ยืนยันลบชุดแปลง "${r.name}" จำนวน ${(r.geo?.features?.length||0).toLocaleString('th-TH')} รายการ ?`))return;
+ markLocalDirty();
+ await del('layers',id);
+ await reload();
+ status('✅ ลบชุดแปลง '+r.name+' แล้ว · กำลังซิงก์ Cloud');
+ setTimeout(async()=>{const ok=await forcePushCloud();status(ok?'✅ ลบชุดแปลงและซิงก์ Cloud แล้ว':'⚠ ลบในเครื่องแล้ว รอ Cloud ซิงก์')},50);
+};
+
+window.deleteParcelFromLayer=async function(layerId,pc){
+ const r=layers.find(x=>x.id===layerId);
+ if(!r)return alert('ไม่พบชั้นข้อมูลของแปลง');
+ if(!confirm('ยืนยันลบแปลง '+pc+' ?'))return;
+ const before=r.geo.features.length;
+ r.geo.features=r.geo.features.filter(f=>normalizeCode(parcelCode(f))!==normalizeCode(pc));
+ if(r.geo.features.length===before)return alert('ไม่พบแปลง '+pc);
+ markLocalDirty();
+ await put('layers',r);
+ await reload();
+ status('✅ ลบแปลง '+pc+' แล้ว · กำลังซิงก์ Cloud');
+ setTimeout(async()=>{const ok=await forcePushCloud();status(ok?'✅ ลบแปลง '+pc+' และซิงก์ Cloud แล้ว':'⚠ ลบในเครื่องแล้ว รอ Cloud ซิงก์')},50);
+};
 
 function render(){
  drawn.clearLayers();parcelLeaflets=[];searchIndex=[];
@@ -469,7 +542,10 @@ function render(){
    }
  }
  for(const b of buildings){
-   const m=L.circleMarker([b.lat,b.lng],{radius:6,color:'#0d6efd',weight:2,fillOpacity:.9}).addTo(drawn).bindPopup(popupBuild(b));
+   const m=L.circleMarker([b.lat,b.lng],{
+     radius:9,color:'#ffffff',weight:3,fillColor:'#0d6efd',fillOpacity:1
+   }).addTo(drawn).bindPopup(popupBuild(b),{maxWidth:330});
+   m.bindTooltip('🏠 '+(b.buildingCode||''),{direction:'top',offset:[0,-8],opacity:.95});
    searchIndex.push({type:'building',key:(b.buildingCode||'')+' '+(b.parcelCode||''),leaflet:m,record:b});
  }
  for(const s of surveys){
@@ -477,15 +553,35 @@ function render(){
  }
  renderLayers();
 }
-function renderLayers(){const box=document.getElementById('layerList');box.innerHTML='';layers.forEach(r=>{const d=document.createElement('div');d.className='layer';d.textContent=`${r.name} · ${r.geo.features.length.toLocaleString('th-TH')} รายการ`;box.appendChild(d)})}
-async function reload(){layers=await byOrg('layers',currentOrgId);buildings=await byOrg('buildings',currentOrgId);surveys=await byOrg('surveys',currentOrgId);render()}
+function renderLayers(){
+ const box=document.getElementById('layerList');
+ box.innerHTML='';
+ const bc=document.getElementById('buildCount');
+ if(bc)bc.textContent='🏠 สิ่งปลูกสร้าง '+buildings.length.toLocaleString('th-TH')+' จุด · ✅ สำรวจ '+surveys.length.toLocaleString('th-TH')+' จุด';
+ layers.forEach(r=>{
+   const d=document.createElement('div');
+   d.className='layer';
+   d.innerHTML=`<div style="font-weight:700">${esc(r.name)}</div>
+     <div class="sub">${(r.geo?.features?.length||0).toLocaleString('th-TH')} รายการ</div>
+     <button class="danger" style="margin-top:5px;width:100%" onclick="deleteLayerById('${r.id}')">🗑 ลบชุดแปลงนี้</button>`;
+   box.appendChild(d);
+ });
+}
 
 async function refreshOrgs(){
  let os=await all('orgs');
- if(!os.length){const o={id:uuid(),name:'อปท. ตัวอย่าง'};await put('orgs',o);os=[o]}
- const s=document.getElementById('orgSelect');s.innerHTML='';
+ if(!os.length){
+   const o={id:uuid(),name:'อปท. ตัวอย่าง',createdAt:Date.now()};
+   await put('orgs',o);os=[o];
+ }
+ const prev=currentOrgId;
+ const s=document.getElementById('orgSelect');
+ s.innerHTML='';
  os.sort((a,b)=>a.name.localeCompare(b.name,'th')).forEach(o=>s.add(new Option(o.name,o.id)));
- if(!currentOrgId||!os.some(o=>o.id===currentOrgId))currentOrgId=os[0].id;s.value=currentOrgId;await reload();
+ if(prev && os.some(o=>o.id===prev)) currentOrgId=prev;
+ else currentOrgId=os[0].id;
+ s.value=currentOrgId;
+ await reload();
 }
 
 function openBuildAdd(ll,f){
@@ -502,7 +598,27 @@ function openBuildAdd(ll,f){
     b_room:document.getElementById('br').value,wide:document.getElementById('bw').value,long:document.getElementById('bl').value,
     b_age:document.getElementById('ba').value,name:document.getElementById('bn').value,b_address:document.getElementById('bad').value,
     b_moo:document.getElementById('bmoo').value,note:document.getElementById('bnote').value,lat:ll.lat,lng:ll.lng,updatedAt:Date.now()};
-   await put('buildings',b);closeModal();await reload();status('✅ บันทึก '+code+' แล้ว');scheduleCloudPush();
+   markLocalDirty();
+   await put('buildings',b);
+   closeModal();
+   await reload();
+
+   // แสดงจุดใหม่ทันที ไม่รอ Cloud
+   const newMarker=searchIndex.find(x=>x.type==='building' && x.record?.id===b.id);
+   if(newMarker){
+     try{
+       map.setView([b.lat,b.lng],Math.max(map.getZoom(),19));
+       newMarker.leaflet.openTooltip();
+       setTimeout(()=>newMarker.leaflet.closeTooltip(),2500);
+     }catch(_){}
+   }
+
+   status('✅ บันทึก '+code+' แล้ว · กำลังซิงก์ Cloud อัตโนมัติ');
+   // ส่ง Cloud เบื้องหลัง ผู้ใช้ทำงานต่อได้ทันที
+   setTimeout(async()=>{
+     const ok=await forcePushCloud();
+     status(ok?'✅ '+code+' ซิงก์ Cloud แล้ว':'⚠ '+code+' อยู่ในเครื่อง รอ Cloud ซิงก์อัตโนมัติ');
+   },50);
  });
 }
 function openBuildEdit(b){
@@ -516,8 +632,14 @@ function openBuildEdit(b){
    b_room:document.getElementById('br').value,wide:document.getElementById('bw').value,long:document.getElementById('bl').value,
    b_age:document.getElementById('ba').value,name:document.getElementById('bn').value,b_address:document.getElementById('bad').value,
    b_moo:document.getElementById('bmoo').value,note:document.getElementById('bnote').value,updatedAt:Date.now()});
-   await put('buildings',b);closeModal();await reload();status('✅ แก้ไข '+b.buildingCode+' แล้ว');scheduleCloudPush();
- },async()=>{await del('buildings',b.id);closeModal();await reload();status('✅ ลบ '+b.buildingCode+' แล้ว');scheduleCloudPush()});
+   markLocalDirty();
+   await put('buildings',b);
+   closeModal();await reload();
+   status('✅ แก้ไข '+b.buildingCode+' แล้ว · กำลังซิงก์ Cloud');
+   setTimeout(async()=>{const ok=await forcePushCloud();status(ok?'✅ แก้ไข '+b.buildingCode+' และซิงก์แล้ว':'⚠ รอ Cloud ซิงก์อัตโนมัติ')},50);
+ },async()=>{markLocalDirty();await del('buildings',b.id);closeModal();await reload();
+   status('✅ ลบ '+b.buildingCode+' แล้ว · กำลังซิงก์ Cloud');
+   setTimeout(async()=>{const ok=await forcePushCloud();status(ok?'✅ ลบ '+b.buildingCode+' และซิงก์แล้ว':'⚠ รอ Cloud ซิงก์อัตโนมัติ')},50)});
 }
 
 function openSurveyAdd(ll,f){
@@ -526,16 +648,43 @@ function openSurveyAdd(ll,f){
  `<div class="field"><label>สถานะ</label><select id="ss"><option>สำรวจแล้ว</option><option>ตรวจแล้ว</option><option>มีการแก้ไข</option><option>ต้องกลับไปตรวจ</option></select></div>`+
  `<div class="field"><label>หมายเหตุ</label><textarea id="sn"></textarea></div>`;
  openModal('บันทึกสถานะสำรวจ',body,async()=>{
+  markLocalDirty();
   await put('surveys',{id:uuid(),orgId:currentOrgId,parcelCode:pc,lat:ll.lat,lng:ll.lng,status:document.getElementById('ss').value,note:document.getElementById('sn').value,updatedAt:Date.now()});
-  closeModal();await reload();status('✅ บันทึกสถานะแปลง '+pc+' แล้ว');scheduleCloudPush();
+  closeModal();await reload();status('✅ บันทึกสถานะแปลง '+pc+' แล้ว · กำลังซิงก์ Cloud');
+  setTimeout(async()=>{const ok=await forcePushCloud();status(ok?'✅ สถานะแปลง '+pc+' ซิงก์แล้ว':'⚠ รอ Cloud ซิงก์อัตโนมัติ')},50);
  });
 }
 
+
+function showParcelSearchPin(item,q){
+  try{
+    if(searchPin){map.removeLayer(searchPin);searchPin=null;}
+    let ll=null;
+    if(item.leaflet?.getBounds){
+      const b=item.leaflet.getBounds();
+      if(b&&b.isValid())ll=b.getCenter();
+    }else if(item.leaflet?.getLatLng){
+      ll=item.leaflet.getLatLng();
+    }
+    if(!ll)return;
+
+    searchPin=L.marker(ll,{zIndexOffset:2000}).addTo(map);
+    const label=item.type==='parcel'?'แปลง '+q:(item.record?.buildingCode||q);
+    searchPin.bindPopup(
+      `<b>📍 ${esc(label)}</b><br>`+
+      `<button onclick="navTo(${ll.lat},${ll.lng})" style="margin-top:6px;width:100%;background:#0d6efd;color:#fff;border:0;border-radius:7px;padding:7px">🧭 นำทาง Google Maps</button>`
+    ).openPopup();
+  }catch(e){console.error(e)}
+}
+
 function searchNow(){
- const q=normalizeCode(document.getElementById('search').value).toLowerCase();if(!q)return status('กรุณาพิมพ์รหัสที่ต้องการค้นหา');
+ const q=normalizeCode(document.getElementById('search').value).toLowerCase();if(!q){if(searchPin){map.removeLayer(searchPin);searchPin=null;}return status('กรุณาพิมพ์รหัสที่ต้องการค้นหา');}
  const h=searchIndex.find(x=>normalizeCode(x.key).toLowerCase().includes(q));if(!h)return alert('ไม่พบข้อมูล '+q);
  try{if(h.leaflet.getBounds)map.fitBounds(h.leaflet.getBounds(),{padding:[40,40],maxZoom:20});else map.setView(h.leaflet.getLatLng(),20)}catch(e){}
- h.leaflet.openPopup?.();status('✅ พบข้อมูล '+q);if(window.innerWidth<=760)setSideOpen(false);
+ showParcelSearchPin(h,q);
+ h.leaflet.openPopup?.();
+ status('✅ พบข้อมูล '+q+' · ปักหมุดแล้ว');
+ if(window.innerWidth<=760)setSideOpen(false);
 }
 function csvEsc(v){const s=String(v??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}
 function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
@@ -547,10 +696,36 @@ document.getElementById('modalCancel').onclick=closeModal;
 document.getElementById('modalSave').onclick=async()=>{try{if(activeModal?.onSave)await activeModal.onSave()}catch(e){alert('บันทึกไม่สำเร็จ: '+e.message)}};
 document.getElementById('modalDelete').onclick=async()=>{if(activeModal?.onDelete&&confirm('ยืนยันลบ?'))await activeModal.onDelete()};
 document.getElementById('addOrg').onclick=async()=>{
- try{const n=document.getElementById('newOrgName').value.trim();if(!n)return alert('กรุณากรอกชื่อ อปท.');
- const o={id:uuid(),name:n};await put('orgs',o);currentOrgId=o.id;document.getElementById('newOrgName').value='';await refreshOrgs();status('✅ เพิ่ม อปท. '+n+' แล้ว');scheduleCloudPush()}catch(e){alert('เพิ่ม อปท. ไม่สำเร็จ: '+e.message)}
+ try{
+   const n=document.getElementById('newOrgName').value.trim();
+   if(!n)return alert('กรุณากรอกชื่อ อปท.');
+   markLocalDirty();
+   const o={id:uuid(),name:n,createdAt:Date.now()};
+   await put('orgs',o);
+   currentOrgId=o.id;
+   document.getElementById('newOrgName').value='';
+   await refreshOrgs();
+   document.getElementById('orgSelect').value=o.id;
+   status('✅ เพิ่ม อปท. '+n+' แล้ว · กำลังบันทึก Cloud');
+   setTimeout(async()=>{
+      const ok=await forcePushCloud();
+      status(ok?'✅ เพิ่ม อปท. '+n+' และซิงก์ Cloud แล้ว':'⚠ เพิ่ม อปท. แล้ว แต่ Cloud รอซิงก์');
+   },50);
+ }catch(e){
+   clearLocalDirty();
+   alert('เพิ่ม อปท. ไม่สำเร็จ: '+e.message);
+ }
 };
-document.getElementById('orgSelect').onchange=async e=>{currentOrgId=e.target.value;await reload();status('✅ เปลี่ยน อปท. แล้ว');if(window.innerWidth<=760)setSideOpen(false)};
+document.getElementById('orgSelect').onchange=async e=>{
+ currentOrgId=e.target.value;
+ if(searchPin){try{map.removeLayer(searchPin)}catch(_){ }searchPin=null;}
+ map.closePopup();
+ await reload();
+ if(cloudReady)await pullOrgCloud(currentOrgId,true);
+ const opt=e.target.options[e.target.selectedIndex];
+ status('✅ สลับไป '+(opt?.text||'อปท.')+' แล้ว');
+ if(window.innerWidth<=760)setSideOpen(false);
+};
 document.getElementById('mode').onchange=e=>{mode=e.target.value;status('โหมด: '+e.target.options[e.target.selectedIndex].text);if(window.innerWidth<=760)setSideOpen(false)};
 document.getElementById('toggleLabels').onclick=()=>{showLabels=!showLabels;render();status(showLabels?'✅ แสดงรหัสแปลง':'✅ ซ่อนรหัสแปลง')};
 document.getElementById('satBtn').onclick=()=>{if(map.hasLayer(osm))map.removeLayer(osm);if(!map.hasLayer(sat))sat.addTo(map);status('✅ แผนที่ดาวเทียม')};
@@ -572,19 +747,66 @@ document.getElementById('sideOverlay').onclick=()=>setSideOpen(false);
 
 
 document.getElementById('fileInput').onchange=async e=>{
- const f=e.target.files[0];if(!f)return;
+ const f=e.target.files[0];
+ if(!f)return;
+ const targetOrgId=currentOrgId; // ล็อก อปท. ที่เลือกไว้ตั้งแต่เริ่ม import
  try{
-  if(!currentOrgId)throw new Error('ยังไม่มี อปท.');
-  status('กำลังนำเข้า '+f.name+' ...');const txt=await f.text();let geo;
-  if(f.name.toLowerCase().endsWith('.kml'))geo=parseKML(txt);else geo=normalizeGeo(JSON.parse(txt));
-  if(!geo.features.length)throw new Error('ไฟล์ไม่มี Feature');
-  await put('layers',{id:uuid(),orgId:currentOrgId,name:f.name,geo,createdAt:Date.now()});await reload();
-  let bounds=null;parcelLeaflets.forEach(l=>{try{const b=l.getBounds();bounds=bounds?bounds.extend(b):b}catch(x){}});if(bounds?.isValid())map.fitBounds(bounds,{padding:[20,20]});
-  const msg=`✅ นำเข้าเรียบร้อย: ${f.name} จำนวน ${geo.features.length.toLocaleString('th-TH')} รายการ`;status(msg);alert(msg);const cloudOK=await pushCloud();
-if(cloudOK) alert('☁ ข้อมูลถูกส่งขึ้น Cloud เรียบร้อย มือถือรีเฟรชแล้วควรเห็นข้อมูล');
-else alert('⚠ นำเข้าในคอมสำเร็จ แต่ยังส่งขึ้น Cloud ไม่สำเร็จ ดูข้อความ Cloud บนหน้าจอ');
-if(window.innerWidth<=760)setSideOpen(false);
- }catch(err){const msg='❌ นำเข้าไม่สำเร็จ: '+err.message;status(msg);alert(msg)}
+  if(!targetOrgId)throw new Error('ยังไม่ได้เลือก อปท.');
+
+  const orgsNow=await all('orgs');
+  const targetOrg=orgsNow.find(o=>o.id===targetOrgId);
+  if(!targetOrg)throw new Error('ไม่พบ อปท. ที่เลือก กรุณาเลือกใหม่อีกครั้ง');
+
+  markLocalDirty();
+  status('กำลังนำเข้า '+f.name+' ไปยัง '+targetOrg.name+' ...');
+
+  const txt=await f.text();
+  let geo;
+  if(f.name.toLowerCase().endsWith('.kml')) geo=parseKML(txt);
+  else geo=normalizeGeo(JSON.parse(txt));
+
+  if(!geo?.features?.length)throw new Error('ไฟล์ไม่มี Feature');
+
+  await put('layers',{
+    id:uuid(),
+    orgId:targetOrgId,
+    name:f.name,
+    geo,
+    createdAt:Date.now()
+  });
+
+  // กลับมายัง อปท. เป้าหมายแน่นอน แล้ว reload เฉพาะของ อปท. นี้
+  currentOrgId=targetOrgId;
+  document.getElementById('orgSelect').value=targetOrgId;
+  await reload();
+
+  let bounds=null;
+  parcelLeaflets.forEach(l=>{
+    try{
+      const b=l.getBounds();
+      if(b&&b.isValid())bounds=bounds?bounds.extend(b):b;
+    }catch(_){}
+  });
+  if(bounds?.isValid())map.fitBounds(bounds,{padding:[20,20],maxZoom:19});
+
+  const msg=`✅ นำเข้าเรียบร้อย: ${f.name} → ${targetOrg.name} จำนวน ${geo.features.length.toLocaleString('th-TH')} รายการ`;
+  status(msg);
+  alert(msg);
+
+  // ส่ง snapshot ทั้งหมดขึ้น cloud แต่ไม่ปล่อยให้ pull เก่าทับระหว่างทาง
+  setTimeout(async()=>{
+    const ok=await forcePushCloud();
+    status(ok
+      ?`✅ ${targetOrg.name}: แปลงถูกซิงก์ Cloud แล้ว`
+      :`⚠ ${targetOrg.name}: นำเข้าในเครื่องแล้ว แต่ Cloud รอซิงก์`);
+  },50);
+
+  if(window.innerWidth<=760)setSideOpen(false);
+ }catch(err){
+  clearLocalDirty();
+  const msg='❌ นำเข้าไม่สำเร็จ: '+(err.message||err);
+  status(msg);alert(msg);
+ }
  e.target.value='';
 };
 
@@ -600,14 +822,14 @@ document.getElementById('restore').onchange=async e=>{const f=e.target.files[0];
 document.getElementById('cloudSync').onclick=async()=>{
  if(!initCloud())return alert('เชื่อม Cloud ไม่ได้');
  const ok=await cloudHealthCheck();
- if(ok)await pullCloud(false);
+ if(ok)await pullOrgCloud(currentOrgId,false);
 };
 
 document.addEventListener('visibilitychange',()=>{
- if(document.visibilityState==='visible' && cloudReady) pullCloud(true);
+ if(document.visibilityState==='visible' && cloudReady) pullOrgCloud(currentOrgId,true);
 });
-window.addEventListener('focus',()=>{if(cloudReady)pullCloud(true)});
-setInterval(()=>{if(cloudReady && document.visibilityState==='visible')pullCloud(true)},5000);
+window.addEventListener('focus',()=>{if(cloudReady)pullOrgCloud(currentOrgId,true)});
+setInterval(()=>{if(cloudReady && document.visibilityState==='visible')pullOrgCloud(currentOrgId,true)},2000);
 
 map.on('click',e=>{if(mode==='building-add'){const f=findParcel(e.latlng);if(!f)return alert('จุดนี้อยู่นอกแปลง');openBuildAdd(e.latlng,f)}else if(mode==='survey-add'){const f=findParcel(e.latlng);if(!f)return alert('จุดนี้อยู่นอกแปลง');openSurveyAdd(e.latlng,f)}});
 
@@ -615,7 +837,7 @@ map.on('click',e=>{if(mode==='building-add'){const f=findParcel(e.latlng);if(!f)
  try{
   await openDB();await refreshOrgs();status('✅ ระบบพร้อมใช้งาน');
   setTimeout(()=>map.invalidateSize(true),250);
-  if(initCloud()){await cloudHealthCheck();await pullCloud(true);}
+  if(initCloud()){await cloudHealthCheck();await pullOrgCloud(currentOrgId,true);}
  }catch(e){status('❌ เปิดฐานข้อมูลไม่สำเร็จ');alert('เปิดระบบไม่สำเร็จ: '+e.message)}
 })();
 
@@ -623,9 +845,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')setSideOpen(false)})
 window.addEventListener('resize',()=>{if(window.innerWidth>760)setSideOpen(false)});
 
 
-window.addEventListener('online',()=>{cloudMsg('✅ อินเทอร์เน็ตกลับมาแล้ว กำลังโหลด Cloud...',true);pullCloud(true)});
+window.addEventListener('online',()=>{cloudMsg('✅ อินเทอร์เน็ตกลับมาแล้ว กำลังโหลด Cloud...',true);pullOrgCloud(currentOrgId,true)});
 window.addEventListener('offline',()=>cloudMsg('❌ ออฟไลน์ — ไม่มีอินเทอร์เน็ต',false));
-window.addEventListener('pageshow',()=>{if(cloudReady)pullCloud(true)});
+window.addEventListener('pageshow',()=>{if(cloudReady)pullOrgCloud(currentOrgId,true)});
 
 </script>
 </body></html>
