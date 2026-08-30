@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SOMPORN Multi-Org Parcel Manager V17 FIXED</title>
+<title>SOMPORN Multi-Org Parcel Manager CLEAN V1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 html,body{height:100%;margin:0;font-family:Tahoma,Arial,sans-serif;background:#f3f4f6}
@@ -40,7 +40,7 @@ button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;backgr
 .field label{display:block;font-size:11px;font-weight:bold;margin-bottom:3px}
 .field input,.field select,.field textarea{width:100%}
 .codebox{padding:8px;border-radius:8px;background:#f1f3f5;font-size:12px;font-weight:bold}
-.badge{display:inline-block;background:#eee;border-radius:10px;padding:3px 6px;font-size:10px;margin-right:3px}.cloudbox{margin-top:7px;padding:8px;border:1px solid #cbd5e1;border-radius:9px;background:#f8fafc}.cloudstate{font-size:11px;font-weight:bold;margin-bottom:6px}.cloud-online{color:#0a8f4d}.cloud-offline{color:#b45309}
+.badge{display:inline-block;background:#eee;border-radius:10px;padding:3px 6px;font-size:10px;margin-right:3px}
 .parcel-label{font-size:10px;font-weight:bold;background:rgba(255,255,255,.8);border:1px solid #555;border-radius:4px;padding:1px 3px;white-space:nowrap}
 .popup-table{border-collapse:collapse;font-size:12px;min-width:220px}
 .popup-table td{padding:3px 5px;border-bottom:1px solid #eee;vertical-align:top}
@@ -54,65 +54,41 @@ button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;backgr
 </style>
 
 <style>
-.top-search{
+.top-search-clean{
   position:sticky;
   top:0;
   z-index:1000;
-  background:#ffffff;
-  padding:8px 0 10px;
+  background:white;
+  padding:8px 0 9px;
   margin-bottom:8px;
   border-bottom:1px solid #e2e8f0;
 }
-.top-search .section-title{
-  font-size:13px;
+.top-search-clean .mini-title{
   font-weight:700;
+  font-size:13px;
   margin-bottom:5px;
 }
-.top-search .row{
-  display:flex;
-  gap:6px;
+.top-search-clean .row{display:flex;gap:6px}
+.top-search-clean input{
+  flex:1;min-width:0;font-size:16px;padding:9px 10px;
+  border:1px solid #94a3b8;border-radius:8px;
 }
-.top-search input{
-  flex:1;
-  min-width:0;
-  font-size:16px;
-  padding:10px 11px;
-  border:1px solid #94a3b8;
-  border-radius:8px;
-}
-.top-search button{
-  min-width:74px;
-}
-#map{
-  background:#dbeafe;
-}
-@media (max-width:700px){
-  .top-search{padding-top:4px}
-  .top-search input{font-size:16px}
-}
+#map{background:#dbeafe}
 </style>
-
 </head>
 <body>
-<div id="app">
-<aside id="sidebar">
-
-<div class="top-search">
-  <div class="section-title">🔎 ค้นหารหัสแปลงที่ดิน</div>
+<div class="top-search-clean">
+  <div class="mini-title">🔎 ค้นหารหัสแปลงที่ดิน</div>
   <div class="row">
-    <input id="search" placeholder="พิมพ์รหัสแปลง เช่น 02B019">
+    <input id="search" placeholder="เช่น 02B019">
     <button id="searchBtn" class="blue">ค้นหา</button>
   </div>
 </div>
 
-<div class="row" style="margin-bottom:6px">
-  <button id="satelliteBtn" class="blue">🛰 ดาวเทียม</button>
-  <button id="roadBtn">🗺 ถนน</button>
-</div>
-
-
+<div id="app">
+<aside id="sidebar">
   <div id="brand">
-    <h2>SOMPORN Multi-Org Parcel V17 FIXED</h2>
+    <h2>SOMPORN Multi-Org Parcel CLEAN V1</h2>
     <div class="sub">แปลงที่ดิน + สิ่งปลูกสร้าง + จุดสถานะสำรวจ</div>
   </div>
 
@@ -151,19 +127,6 @@ button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;backgr
       <label class="filebtn warn" for="restoreAll">♻ กู้คืนข้อมูล</label>
       <input id="restoreAll" type="file" accept=".json" style="display:none">
     </div>
-    <div class="cloudbox">
-      <div id="cloudState" class="cloudstate cloud-offline">☁ ฐานข้อมูลกลาง: ยังไม่ได้ตั้งค่า</div>
-      <div class="row">
-        <button id="cloudConfig">⚙ ตั้งค่าฐานข้อมูลครั้งแรก</button>
-        <button id="cloudShare" class="blue">🔗 คัดลอกลิงก์ใช้งาน</button>
-        <button id="cloudPull" class="good">↻ รีเฟรชข้อมูล</button>
-      </div>
-      <div class="sub" style="margin-top:5px">
-        ใช้งานปกติไม่ต้องกดอะไร: คอมบันทึก → ขึ้นกลางอัตโนมัติ · มือถือรีเฟรช → เห็นข้อมูล · มือถือบันทึก → คอมรีเฟรช → เห็นข้อมูล
-      </div>
-      <span id="rtState" class="badge">Realtime: ปิด</span>
-    </div>
-    </div>
     <div class="sub" style="margin-top:6px">
       Building schema: parcel_cod, b_code, b_type, b_chb, b_room, wide, long, lu, b_age, name, b_address, b_moo, photo, note
     </div>
@@ -180,15 +143,11 @@ button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;backgr
 
 <main id="main">
   <div id="map"></div>
-<div id="mapHealth" style="position:absolute;right:10px;bottom:12px;z-index:900;background:rgba(255,255,255,.94);
-padding:6px 9px;border-radius:8px;font-size:11px;box-shadow:0 1px 7px rgba(0,0,0,.2)">
-🛰 แผนที่พร้อมใช้งาน
-</div>
-
   <div id="topbar">
     <div class="row">
       <button id="menuBtn">☰</button>
-      
+      <input id="search" placeholder="ค้นหารหัสแปลง / เลขแปลง / รหัสสิ่งปลูกสร้าง">
+      <button id="btnSearch" class="primary">ค้นหา</button>
       <button id="btnMe">📍 ฉัน</button>
     </div>
     <div id="status">พร้อมใช้งาน</div>
@@ -210,7 +169,6 @@ padding:6px 9px;border-radius:8px;font-size:11px;box-shadow:0 1px 7px rgba(0,0,0
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 proj4.defs("EPSG:4326","+proj=longlat +datum=WGS84 +no_defs +type=crs");
 proj4.defs("EPSG:24047","+proj=utm +zone=47 +ellps=evrst30 +towgs84=293,836,318,0.5,1.6,-2.8,2.1 +units=m +no_defs +type=crs");
@@ -248,61 +206,25 @@ function simpleNamedSelectHtml(label,id,values,val=''){
 
 
 const map=L.map('map',{preferCanvas:true}).setView([13.7,100.5],9);
-const esriSatellite=L.tileLayer(
- 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
- {maxZoom:22,attribution:'Tiles © Esri'}
-);
-const osmBase=L.tileLayer(
- 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
- {maxZoom:22,attribution:'© OpenStreetMap'}
-);
-esriSatellite.addTo(map);
-esriSatellite.on('load',()=>{const e=document.getElementById('mapHealth');if(e)e.textContent='🛰 ดาวเทียมพร้อมใช้งาน';});
-esriSatellite.on('tileerror',()=>{const e=document.getElementById('mapHealth');if(e)e.textContent='⚠ โหลดภาพดาวเทียมไม่ได้ ตรวจอินเทอร์เน็ต';});
 
+const baseSatellite = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom: 22, attribution: 'Tiles © Esri'}
+);
+const baseOSM = L.tileLayer(
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {maxZoom: 22, attribution: '© OpenStreetMap'}
+);
+baseSatellite.addTo(map);
 L.control.layers(
- {'ดาวเทียม Esri':esriSatellite,'แผนที่ถนน OSM':osmBase},
- {},
- {position:'topright'}
+  {'🛰 ดาวเทียม': baseSatellite, '🗺 ถนน': baseOSM},
+  {},
+  {position:'topright'}
 ).addTo(map);
 
+L.control.layers({'ดาวเทียม':sat,'ถนน':osm}).addTo(map);
 
 let db,currentOrgId=null,currentMode='view',showLabels=false;
-let cloudClient=null, cloudSyncing=false, realtimeChannel=null, realtimeTimer=null, autoPushTimer=null;
-const CLOUD_CFG_KEY='SOMPORN_SHARED_CLOUD_CFG_V1';
-function getCloudCfg(){
- try{return JSON.parse(localStorage.getItem(CLOUD_CFG_KEY)||'null');}catch(e){return null;}
-}
-function setCloudCfg(v){localStorage.setItem(CLOUD_CFG_KEY,JSON.stringify(v));}
-function cloudStatus(msg,online=false){
- const el=document.getElementById('cloudState'); if(!el)return;
- el.textContent=msg; el.className='cloudstate '+(online?'cloud-online':'cloud-offline');
-}
-function bootstrapCloudFromLink(){
- try{
-   const u=new URL(location.href);
-   const url=u.searchParams.get('sburl');
-   const key=u.searchParams.get('sbkey');
-   if(url&&key){
-     setCloudCfg({url,key});
-     u.searchParams.delete('sburl');u.searchParams.delete('sbkey');
-     history.replaceState({},'',u.toString());
-     return true;
-   }
- }catch(e){}
- return false;
-}
-function initCloudClient(){
- bootstrapCloudFromLink();
- const cfg=getCloudCfg();
- if(!cfg||!cfg.url||!cfg.key){cloudClient=null;cloudStatus('☁ ฐานข้อมูลกลาง: ยังไม่ได้ตั้งค่า');return false;}
- try{
-   cloudClient=window.supabase.createClient(cfg.url,cfg.key);
-   cloudStatus('☁ ฐานข้อมูลกลาง: เชื่อมต่อแล้ว',true);
-   return true;
- }catch(e){cloudClient=null;cloudStatus('☁ ฐานข้อมูลกลาง: ตั้งค่าไม่ถูกต้อง');return false;}
-}
-
 let parcelRecords=[], buildingRecords=[], surveyRecords=[];
 let parcelLeaflet=new Map(), buildingLeaflet=new Map(), surveyLeaflet=new Map(), labelLayer=L.layerGroup().addTo(map);
 let searchIndex=[], activeModal=null;
@@ -323,32 +245,8 @@ function openDB(){return new Promise((res,rej)=>{
 });}
 async function all(name){return await reqP(store(name).getAll());}
 async function byOrg(name,orgId){return await reqP(store(name).index('orgId').getAll(IDBKeyRange.only(orgId)));}
-
-function scheduleAutoCloudPush(){
- if(!cloudClient||cloudSyncing)return;
- clearTimeout(autoPushTimer);
- autoPushTimer=setTimeout(async()=>{
-   try{await cloudPushAll(true);}catch(e){console.error(e);}
- },800);
-}
-
-async function putLocalOnly(name,obj){return await reqP(store(name,'readwrite').put(obj));}
-async function put(name,obj){
- const r=await putLocalOnly(name,obj);
- if(!cloudSyncing){
-   cloudUpsertRecord(name,obj);
-   scheduleAutoCloudPush();
- }
- return r;
-}
-async function del(name,id){
- const r=await reqP(store(name,'readwrite').delete(id));
- if(!cloudSyncing){
-   cloudDeleteRecord(name,id);
-   scheduleAutoCloudPush();
- }
- return r;
-}
+async function put(name,obj){return await reqP(store(name,'readwrite').put(obj));}
+async function del(name,id){return await reqP(store(name,'readwrite').delete(id));}
 
 function esc(v){return String(v??'-').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function firstCoord(g){if(!g||!g.coordinates)return null;let c=g.coordinates;while(Array.isArray(c)&&Array.isArray(c[0]))c=c[0];return Array.isArray(c)&&typeof c[0]==='number'?c:null;}
@@ -636,160 +534,6 @@ function openSurveyEdit(s){
  },async()=>{await del('surveys',s.id);closeModal();await reloadOrg();});
 }
 
-
-
-
-
-async function stopRealtime(){
- if(realtimeChannel && cloudClient){
-   try{await cloudClient.removeChannel(realtimeChannel);}catch(e){}
- }
- realtimeChannel=null;
- const el=document.getElementById('rtState');if(el)el.textContent='Realtime: ปิด';
-}
-
-async function startRealtime(){
- if(!cloudClient)return;
- await stopRealtime();
- const el=document.getElementById('rtState');if(el)el.textContent='Realtime: กำลังเชื่อม...';
-
- const scheduleRefresh=()=>{
-   clearTimeout(realtimeTimer);
-   realtimeTimer=setTimeout(async()=>{
-     if(!cloudSyncing){
-       try{await cloudPullAll(true);}catch(e){console.error(e);}
-     }
-   },500);
- };
-
- realtimeChannel=cloudClient.channel('somporn-shared-live')
-   .on('postgres_changes',{event:'*',schema:'public',table:'buildings'},scheduleRefresh)
-   .on('postgres_changes',{event:'*',schema:'public',table:'surveys'},scheduleRefresh)
-   .on('postgres_changes',{event:'*',schema:'public',table:'layers'},scheduleRefresh)
-   .on('postgres_changes',{event:'*',schema:'public',table:'orgs'},scheduleRefresh)
-   .subscribe(status=>{
-      const el=document.getElementById('rtState');
-      if(!el)return;
-      if(status==='SUBSCRIBED')el.textContent='Realtime: ออนไลน์';
-      else if(status==='CHANNEL_ERROR')el.textContent='Realtime: ขัดข้อง';
-      else el.textContent='Realtime: '+status;
-   });
-}
-
-
-
-async function cloudPushAll(silent=false){
- if(cloudSyncing)return;
- if(!cloudClient)return alert('ยังไม่ได้ตั้งค่าฐานข้อมูลกลาง');
- cloudSyncing=true;
- try{
-   const orgs=await all('orgs'), layers=await all('layers'), buildings=await all('buildings'), surveys=await all('surveys');
-
-   // orgs: owner pushes/creates workspaces
-   for(const o of orgs){
-     const {error}=await cloudClient.from('orgs').upsert({id:o.id,name:o.name,owner_id:null,updated_at:new Date().toISOString()},{onConflict:'id'});
-     if(error && !String(error.message).toLowerCase().includes('row-level')) throw error;
-   }
-   for(const r of layers){
-     const {error}=await cloudClient.from('layers').upsert({
-       id:r.id,org_id:r.orgId,name:r.name||'',crs:r.crs||'EPSG:4326',geojson:r.geo,updated_at:new Date().toISOString()
-     },{onConflict:'id'});
-     if(error)throw error;
-   }
-   for(const b of buildings){
-     const {error}=await cloudClient.from('buildings').upsert({
-       id:b.id,org_id:b.orgId,parcel_code:b.parcelCode||'',building_code:b.buildingCode||'',payload:b,
-       lat:b.lat,lng:b.lng,updated_at:new Date().toISOString()
-     },{onConflict:'id'});
-     if(error)throw error;
-   }
-   for(const s of surveys){
-     const {error}=await cloudClient.from('surveys').upsert({
-       id:s.id,org_id:s.orgId,parcel_code:s.parcelCode||'',payload:s,
-       lat:s.lat,lng:s.lng,updated_at:new Date().toISOString()
-     },{onConflict:'id'});
-     if(error)throw error;
-   }
-   cloudStatus(`☁ ซิงก์ขึ้น Cloud แล้ว · ${buildings.length} สิ่งปลูกสร้าง · ${surveys.length} จุดสำรวจ`,true);
- }catch(e){
-   if(!silent)alert('ส่งขึ้น Cloud ไม่สำเร็จ: '+(e.message||e));
- }finally{cloudSyncing=false;}
-}
-
-async function cloudPullAll(silent=false){
- if(cloudSyncing)return;
- if(!cloudClient)return alert('ยังไม่ได้ตั้งค่าฐานข้อมูลกลาง');
- cloudSyncing=true;
- try{
-   const [oR,lR,bR,sR]=await Promise.all([
-     cloudClient.from('orgs').select('*'),
-     cloudClient.from('layers').select('*'),
-     cloudClient.from('buildings').select('*'),
-     cloudClient.from('surveys').select('*')
-   ]);
-   for(const r of [oR,lR,bR,sR])if(r.error)throw r.error;
-
-   // Cloud is source of truth for team mode; replace local cache
-   await clearStore('orgs'); await clearStore('layers'); await clearStore('buildings'); await clearStore('surveys');
-
-   for(const o of oR.data||[]) await putLocalOnly('orgs',{id:o.id,name:o.name,createdAt:Date.now()});
-   for(const l of lR.data||[]) await putLocalOnly('layers',{
-     id:l.id,orgId:l.org_id,name:l.name,crs:l.crs,geo:l.geojson,createdAt:Date.now()
-   });
-   for(const x of bR.data||[]){
-     const b={...(x.payload||{}),id:x.id,orgId:x.org_id,parcelCode:x.parcel_code,buildingCode:x.building_code,lat:x.lat,lng:x.lng};
-     await putLocalOnly('buildings',b);
-   }
-   for(const x of sR.data||[]){
-     const s={...(x.payload||{}),id:x.id,orgId:x.org_id,parcelCode:x.parcel_code,lat:x.lat,lng:x.lng};
-     await putLocalOnly('surveys',s);
-   }
-
-   currentOrgId=(oR.data||[]).some(o=>o.id===currentOrgId)?currentOrgId:(oR.data?.[0]?.id||null);
-   await refreshOrgs();
-   cloudStatus(`☁ ดึงล่าสุดแล้ว · ${(bR.data||[]).length} สิ่งปลูกสร้าง · ${(sR.data||[]).length} จุดสำรวจ`,true);
- }catch(e){
-   if(!silent)alert('ดึงข้อมูล Cloud ไม่สำเร็จ: '+(e.message||e));
- }finally{cloudSyncing=false;}
-}
-
-async function cloudUpsertRecord(name,obj){
- if(!cloudClient||cloudSyncing)return;
- try{
-   if(name==='buildings'){
-     const {error}=await cloudClient.from('buildings').upsert({
-       id:obj.id,org_id:obj.orgId,parcel_code:obj.parcelCode||'',building_code:obj.buildingCode||'',
-       payload:obj,lat:obj.lat,lng:obj.lng,updated_at:new Date().toISOString()
-     },{onConflict:'id'}); if(error)throw error;
-   }else if(name==='surveys'){
-     const {error}=await cloudClient.from('surveys').upsert({
-       id:obj.id,org_id:obj.orgId,parcel_code:obj.parcelCode||'',payload:obj,lat:obj.lat,lng:obj.lng,updated_at:new Date().toISOString()
-     },{onConflict:'id'}); if(error)throw error;
-   }else if(name==='layers'){
-     const {error}=await cloudClient.from('layers').upsert({
-       id:obj.id,org_id:obj.orgId,name:obj.name||'',crs:obj.crs||'EPSG:4326',geojson:obj.geo,updated_at:new Date().toISOString()
-     },{onConflict:'id'}); if(error)throw error;
-   }else if(name==='orgs'){
-     const {error}=await cloudClient.from('orgs').upsert({
-       id:obj.id,name:obj.name,owner_id:null,updated_at:new Date().toISOString()
-     },{onConflict:'id'}); if(error)throw error;
-   }
-   cloudStatus('☁ บันทึกขึ้น Cloud แล้ว',true);
- }catch(e){
-   cloudStatus('☁ บันทึกในเครื่องแล้ว แต่ Cloud มีปัญหา');
-   console.error(e);
- }
-}
-async function cloudDeleteRecord(name,id){
- if(!cloudClient||cloudSyncing)return;
- const table=name==='buildings'?'buildings':name==='surveys'?'surveys':name==='layers'?'layers':name==='orgs'?'orgs':null;
- if(!table)return;
- const {error}=await cloudClient.from(table).delete().eq('id',id);
- if(error){console.error(error);cloudStatus('☁ ลบในเครื่องแล้ว แต่ Cloud มีปัญหา');}
-}
-
-
-
 map.on('click',e=>{
  if(currentMode==='building-add'){const h=findParcelAt(e.latlng);if(!h)return alert('จุดนี้อยู่นอกแปลงที่ดิน');openBuildingAdd(e.latlng,h);}
  else if(currentMode==='survey-add'){const h=findParcelAt(e.latlng);if(!h)return alert('จุดนี้อยู่นอกแปลงที่ดิน');openSurveyAdd(e.latlng,h);}
@@ -813,28 +557,27 @@ document.getElementById('modeSelect').onchange=e=>{currentMode=e.target.value;do
 document.getElementById('toggleLabels').onclick=()=>{showLabels=!showLabels;document.getElementById('toggleLabels').textContent=showLabels?'🏷 ปิดรหัสแปลง':'🏷 เปิดรหัสแปลง';renderAll();};
 
 document.getElementById('file').addEventListener('change',async e=>{
- const file=e.target.files[0];if(!file)return;
+ const file=e.target.files[0];
+ if(!file)return;
  try{
-   if(!currentOrgId) throw new Error('กรุณาเลือกหรือสร้าง อปท. ก่อนนำเข้าข้อมูล');
+   if(!currentOrgId) throw new Error('กรุณาสร้างหรือเลือก อปท. ก่อนนำเข้าข้อมูล');
 
    document.getElementById('status').textContent='กำลังนำเข้า '+file.name+' ...';
-
    const text=await file.text();
    let geo,crs='EPSG:4326';
 
    if(file.name.toLowerCase().endsWith('.kml')){
      geo=parseKML(text);
    }else{
-     const parsed=JSON.parse(text);
-     const n=normalizeGeo(parsed);
-     geo=n.geo;crs=n.crs;
+     const obj=JSON.parse(text);
+     const n=normalizeGeo(obj);
+     geo=n.geo;
+     crs=n.crs;
    }
 
-   if(!geo || !Array.isArray(geo.features)){
-     throw new Error('ไม่พบ Feature ในไฟล์');
-   }
+   if(!geo || !Array.isArray(geo.features)) throw new Error('ไม่พบข้อมูล Feature ในไฟล์');
    const count=geo.features.length;
-   if(count===0) throw new Error('ไฟล์นี้ไม่มีข้อมูลแปลง/Feature');
+   if(count===0) throw new Error('ไฟล์ไม่มี Feature');
 
    await put('layers',{
      id:uuid(),
@@ -847,23 +590,21 @@ document.getElementById('file').addEventListener('change',async e=>{
 
    await reloadOrg();
 
-   // Zoom to imported parcels where possible
+   // fit to all parcel layers
    try{
      let bounds=null;
      parcelLeaflet.forEach(l=>{
        if(l && l.getBounds){
          const b=l.getBounds();
-         if(b && b.isValid()) bounds = bounds ? bounds.extend(b) : b;
+         if(b && b.isValid()) bounds=bounds?bounds.extend(b):b;
        }
      });
-     if(bounds && bounds.isValid()) map.fitBounds(bounds,{padding:[25,25],maxZoom:19});
+     if(bounds && bounds.isValid()) map.fitBounds(bounds,{padding:[20,20],maxZoom:19});
    }catch(_){}
 
    const msg='✅ นำเข้าเรียบร้อย: '+file.name+' จำนวน '+count.toLocaleString('th-TH')+' รายการ';
    document.getElementById('status').textContent=msg;
    alert(msg);
-
-   if(typeof scheduleAutoCloudPush==='function') scheduleAutoCloudPush();
  }catch(err){
    const msg='❌ นำเข้าไม่สำเร็จ: '+(err.message||err);
    document.getElementById('status').textContent=msg;
@@ -897,9 +638,6 @@ function doSearch(){
 
  document.getElementById('status').textContent=`พบ ${hits.length} รายการ · แสดงรายการที่ตรงที่สุด`;
 }
-document.getElementById('searchBtn').onclick=doSearch;
-document.getElementById('search').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
-
 document.getElementById('btnSearch').onclick=doSearch;
 document.getElementById('search').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
 document.getElementById('btnMe').onclick=()=>navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude];map.setView(ll,19);L.circleMarker(ll,{radius:7,weight:3,fillOpacity:1}).addTo(map).bindPopup('ตำแหน่งฉัน').openPopup();},()=>alert('กรุณาอนุญาต Location'),{enableHighAccuracy:true});
@@ -1046,72 +784,16 @@ document.getElementById('restoreAll').addEventListener('change',async e=>{
  e.target.value='';
 });
 
+(async()=>{await openDB();await refreshOrgs();})();
 
-document.getElementById('cloudConfig').onclick=()=>{
- const c=getCloudCfg()||{};
- const body=fieldHtml('Supabase Project URL','cc_url',c.url||'')+
- fieldHtml('Publishable / anon key','cc_key',c.key||'')+
- `<div class="sub">ตั้งครั้งเดียวบนคอมหลัก แล้วกด “คัดลอกลิงก์ใช้งาน” ส่งให้น้อง</div>`;
- openModal('ตั้งค่าฐานข้อมูลกลาง',body,async()=>{
-   const url=document.getElementById('cc_url').value.trim();
-   const key=document.getElementById('cc_key').value.trim();
-   if(!url||!key)return alert('กรอก URL และ Key ให้ครบ');
-   setCloudCfg({url,key});closeModal();
-   initCloudClient();
-   try{await cloudPullAll(true);await startRealtime();}catch(e){console.error(e);}
- });
-};
-document.getElementById('cloudShare').onclick=async()=>{
- const c=getCloudCfg();
- if(!c||!c.url||!c.key)return alert('กรุณาตั้งค่าฐานข้อมูลกลางก่อน');
- const u=new URL(location.href);
- u.searchParams.set('sburl',c.url);
- u.searchParams.set('sbkey',c.key);
- const link=u.toString();
- try{
-   await navigator.clipboard.writeText(link);
-   alert('คัดลอกลิงก์ใช้งานแล้ว ส่งลิงก์นี้ให้น้องได้เลย');
- }catch(e){
-   prompt('คัดลอกลิงก์นี้ส่งให้น้อง',link);
- }
-};
-document.getElementById('cloudPull').onclick=()=>cloudPullAll(false);
+document.getElementById('searchBtn').onclick=doSearch;
+document.getElementById('search').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
 
-document.addEventListener('visibilitychange',async()=>{
- if(document.visibilityState==='visible' && cloudClient && !cloudSyncing){
-   try{await cloudPullAll(true);}catch(e){console.error(e);}
- }
+window.addEventListener('load',()=>{
+  setTimeout(()=>{try{map.invalidateSize(true);}catch(e){}},200);
+  setTimeout(()=>{try{map.invalidateSize(true);}catch(e){}},900);
 });
-window.addEventListener('focus',async()=>{
- if(cloudClient && !cloudSyncing){
-   try{await cloudPullAll(true);}catch(e){console.error(e);}
- }
-});
-setInterval(async()=>{
- if(cloudClient && !cloudSyncing && document.visibilityState==='visible'){
-   try{await cloudPullAll(true);}catch(e){console.error(e);}
- }
-},15000);
-
-(async()=>{
- await openDB();
- await refreshOrgs();
- setTimeout(()=>{try{map.invalidateSize(true);}catch(e){}},250);
- setTimeout(()=>{try{map.invalidateSize(true);}catch(e){}},1000);
- if(initCloudClient()){
-   try{await cloudPullAll(true);await startRealtime();}catch(e){console.error(e);}
- }
-})();
-
-if(document.getElementById('satelliteBtn'))document.getElementById('satelliteBtn').onclick=()=>{
- if(map.hasLayer(osmBase))map.removeLayer(osmBase);
- if(!map.hasLayer(esriSatellite))esriSatellite.addTo(map);
-};
-if(document.getElementById('roadBtn'))document.getElementById('roadBtn').onclick=()=>{
- if(map.hasLayer(esriSatellite))map.removeLayer(esriSatellite);
- if(!map.hasLayer(osmBase))osmBase.addTo(map);
-};
-
+window.addEventListener('resize',()=>{try{map.invalidateSize(false);}catch(e){}});
 </script>
 </body>
 </html>
