@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SOMPORN Multi-Org Parcel Manager V16</title>
+<title>SOMPORN Multi-Org Parcel Manager V17 FIXED</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 html,body{height:100%;margin:0;font-family:Tahoma,Arial,sans-serif;background:#f3f4f6}
@@ -112,7 +112,7 @@ button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;backgr
 
 
   <div id="brand">
-    <h2>SOMPORN Multi-Org Parcel V16</h2>
+    <h2>SOMPORN Multi-Org Parcel V17 FIXED</h2>
     <div class="sub">แปลงที่ดิน + สิ่งปลูกสร้าง + จุดสถานะสำรวจ</div>
   </div>
 
@@ -180,6 +180,11 @@ button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;backgr
 
 <main id="main">
   <div id="map"></div>
+<div id="mapHealth" style="position:absolute;right:10px;bottom:12px;z-index:900;background:rgba(255,255,255,.94);
+padding:6px 9px;border-radius:8px;font-size:11px;box-shadow:0 1px 7px rgba(0,0,0,.2)">
+🛰 แผนที่พร้อมใช้งาน
+</div>
+
   <div id="topbar">
     <div class="row">
       <button id="menuBtn">☰</button>
@@ -247,19 +252,20 @@ const esriSatellite=L.tileLayer(
  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
  {maxZoom:22,attribution:'Tiles © Esri'}
 );
-const osmBase=(typeof osmBase!=='undefined')?osmBase:L.tileLayer(
+const osmBase=L.tileLayer(
  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
  {maxZoom:22,attribution:'© OpenStreetMap'}
 );
 esriSatellite.addTo(map);
+esriSatellite.on('load',()=>{const e=document.getElementById('mapHealth');if(e)e.textContent='🛰 ดาวเทียมพร้อมใช้งาน';});
+esriSatellite.on('tileerror',()=>{const e=document.getElementById('mapHealth');if(e)e.textContent='⚠ โหลดภาพดาวเทียมไม่ได้ ตรวจอินเทอร์เน็ต';});
+
 L.control.layers(
  {'ดาวเทียม Esri':esriSatellite,'แผนที่ถนน OSM':osmBase},
  {},
  {position:'topright'}
 ).addTo(map);
 
-const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,attribution:'Imagery © Esri'}).addTo(map);
-const osm=const osmBase=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'© OpenStreetMap'});
 
 let db,currentOrgId=null,currentMode='view',showLabels=false;
 let cloudClient=null, cloudSyncing=false, realtimeChannel=null, realtimeTimer=null, autoPushTimer=null;
@@ -809,12 +815,61 @@ document.getElementById('toggleLabels').onclick=()=>{showLabels=!showLabels;docu
 document.getElementById('file').addEventListener('change',async e=>{
  const file=e.target.files[0];if(!file)return;
  try{
-   const text=await file.text();let geo,crs='EPSG:4326';
-   if(file.name.toLowerCase().endsWith('.kml'))geo=parseKML(text);
-   else{const n=normalizeGeo(JSON.parse(text));geo=n.geo;crs=n.crs;}
-   await put('layers',{id:uuid(),orgId:currentOrgId,name:file.name,crs,geo,createdAt:Date.now()});
-   await reloadOrg();document.getElementById('status').textContent='นำเข้า '+file.name+' สำเร็จ';
- }catch(err){alert(err.message);}e.target.value='';
+   if(!currentOrgId) throw new Error('กรุณาเลือกหรือสร้าง อปท. ก่อนนำเข้าข้อมูล');
+
+   document.getElementById('status').textContent='กำลังนำเข้า '+file.name+' ...';
+
+   const text=await file.text();
+   let geo,crs='EPSG:4326';
+
+   if(file.name.toLowerCase().endsWith('.kml')){
+     geo=parseKML(text);
+   }else{
+     const parsed=JSON.parse(text);
+     const n=normalizeGeo(parsed);
+     geo=n.geo;crs=n.crs;
+   }
+
+   if(!geo || !Array.isArray(geo.features)){
+     throw new Error('ไม่พบ Feature ในไฟล์');
+   }
+   const count=geo.features.length;
+   if(count===0) throw new Error('ไฟล์นี้ไม่มีข้อมูลแปลง/Feature');
+
+   await put('layers',{
+     id:uuid(),
+     orgId:currentOrgId,
+     name:file.name,
+     crs,
+     geo,
+     createdAt:Date.now()
+   });
+
+   await reloadOrg();
+
+   // Zoom to imported parcels where possible
+   try{
+     let bounds=null;
+     parcelLeaflet.forEach(l=>{
+       if(l && l.getBounds){
+         const b=l.getBounds();
+         if(b && b.isValid()) bounds = bounds ? bounds.extend(b) : b;
+       }
+     });
+     if(bounds && bounds.isValid()) map.fitBounds(bounds,{padding:[25,25],maxZoom:19});
+   }catch(_){}
+
+   const msg='✅ นำเข้าเรียบร้อย: '+file.name+' จำนวน '+count.toLocaleString('th-TH')+' รายการ';
+   document.getElementById('status').textContent=msg;
+   alert(msg);
+
+   if(typeof scheduleAutoCloudPush==='function') scheduleAutoCloudPush();
+ }catch(err){
+   const msg='❌ นำเข้าไม่สำเร็จ: '+(err.message||err);
+   document.getElementById('status').textContent=msg;
+   alert(msg);
+ }
+ e.target.value='';
 });
 
 function doSearch(){
@@ -1041,6 +1096,8 @@ setInterval(async()=>{
 (async()=>{
  await openDB();
  await refreshOrgs();
+ setTimeout(()=>{try{map.invalidateSize(true);}catch(e){}},250);
+ setTimeout(()=>{try{map.invalidateSize(true);}catch(e){}},1000);
  if(initCloudClient()){
    try{await cloudPullAll(true);await startRealtime();}catch(e){console.error(e);}
  }
