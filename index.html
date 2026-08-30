@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SOMPORN Parcel MOBILE V3</title>
+<title>SOMPORN Parcel FINAL V4</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box} html,body{height:100%;margin:0;font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;color:#17202a}
@@ -19,7 +19,7 @@ input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:8px;padd
 textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{display:block;font-size:11px;font-weight:700;margin-bottom:3px}
 #searchBox{position:sticky;top:-12px;background:#fff;padding:10px 0 8px;z-index:10;border-bottom:1px solid #eee}
 #status{margin-top:8px;padding:8px;border-radius:8px;background:#eef4ff;font-size:12px;min-height:34px}
-#layerList{font-size:11px}.layer{padding:7px;border:1px solid #e5e7eb;border-radius:7px;margin-top:5px}
+#layerList{font-size:11px}.layer{padding:7px;border:1px solid #e5e7eb;border-radius:7px;margin-top:5px}.layerRow{display:flex;gap:6px;align-items:center}.layerRow .name{flex:1;word-break:break-all}
 #topMobile{display:none;position:absolute;top:8px;left:8px;z-index:800}
 #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center;padding:12px}
 #modal.open{display:flex} #card{background:#fff;border-radius:12px;width:min(520px,100%);max-height:92vh;overflow:auto;padding:14px}
@@ -103,18 +103,19 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
     </div>
   </div>
 
-  <h2>SOMPORN Parcel MOBILE V3</h2>
-  <div class="sub">ระบบแปลงที่ดิน + สิ่งปลูกสร้าง + จุดสำรวจ</div>
+  <h2>SOMPORN Parcel FINAL V4</h2>
+  <div class="sub">ระบบแปลงที่ดิน + สิ่งปลูกสร้าง + จุดสำรวจ · FINAL V4</div>
 
   <div class="section">
     <div class="field"><label>อปท.</label><select id="orgSelect"></select></div>
-    <div class="row"><input id="newOrgName" class="grow" placeholder="ชื่อ อปท. ใหม่"><button id="addOrg" class="good">+ เพิ่ม</button></div>
+    <div class="row"><input id="newOrgName" class="grow" placeholder="ชื่อ อปท. ใหม่"><button id="addOrg" class="good">+ เพิ่ม</button><button id="delOrg" class="danger">ลบ อปท.</button></div>
   </div>
 
   <div class="section">
     <div class="field"><label>โหมดทำงาน</label>
       <select id="mode">
-        <option value="view">ดูข้อมูล</option>
+        <option value="view">ดูข้อมูล / ค้นหา</option>
+        <option value="parcel-edit">แก้ไขแปลงที่ดิน</option>
         <option value="building-add">เพิ่มสิ่งปลูกสร้าง</option>
         <option value="survey-add">ทำเครื่องหมายสำรวจ</option>
       </select>
@@ -132,7 +133,7 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
   </div>
 
   <div class="section">
-    <div class="row"><button id="csvBuild" class="grow">⬇ CSV สิ่งปลูกสร้าง</button><button id="csvSurvey" class="grow">⬇ CSV สำรวจ</button></div>
+    <div class="row"><button id="csvBuild" class="grow">⬇ CSV สิ่งปลูกสร้าง</button><button id="csvSurvey" class="grow">⬇ CSV สำรวจ</button><button id="csvAll" class="grow">⬇ CSV รวม</button></div>
     <div class="row" style="margin-top:6px"><button id="backup" class="good grow">💾 Backup JSON</button><label for="restore" class="filebtn warn grow">♻ Restore</label><input id="restore" type="file" accept=".json" hidden></div>
   </div>
 
@@ -291,7 +292,7 @@ function render(){
        parcelLeaflets.push(inner);
        const pc=normalizeCode(parcelCode(f));
        if(pc)searchIndex.push({type:'parcel',key:pc,feature:f,leaflet:inner});
-       inner.on('click',()=>{if(mode==='view')inner.bindPopup(popupParcel(f,inner)).openPopup()});
+       inner.on('click',()=>{if(mode==='view')inner.bindPopup(popupParcel(f,inner)).openPopup();else if(mode==='parcel-edit')openParcelEdit(f)});
        if(showLabels&&pc){try{inner.bindTooltip(pc,{permanent:true,direction:'center',className:'parcel-label'})}catch(e){}}
      }
    }
@@ -301,11 +302,27 @@ function render(){
    searchIndex.push({type:'building',key:(b.buildingCode||'')+' '+(b.parcelCode||''),leaflet:m,record:b});
  }
  for(const s of surveys){
-   L.circleMarker([s.lat,s.lng],{radius:5,color:'#198754',weight:2,fillOpacity:.9}).addTo(drawn).bindPopup(`<b>${esc(s.parcelCode)}</b><br>${esc(s.status)}<br>${esc(s.note||'')}`);
+   L.circleMarker([s.lat,s.lng],{radius:5,color:'#198754',weight:2,fillOpacity:.9}).addTo(drawn).bindPopup(
+   `<b>${esc(s.parcelCode)}</b><br>${esc(s.status)}<br>${esc(s.note||'')}<div class="popup-actions"><button onclick="editSurvey('${s.id}')">✏ แก้ไข</button><button onclick="removeSurvey('${s.id}')">🗑 ลบ</button></div>`
+ );
  }
  renderLayers();
 }
-function renderLayers(){const box=document.getElementById('layerList');box.innerHTML='';layers.forEach(r=>{const d=document.createElement('div');d.className='layer';d.textContent=`${r.name} · ${r.geo.features.length.toLocaleString('th-TH')} รายการ`;box.appendChild(d)})}
+function renderLayers(){
+ const box=document.getElementById('layerList');box.innerHTML='';
+ if(!layers.length){box.innerHTML='<div class="sub">ยังไม่มีชั้นข้อมูล</div>';return;}
+ layers.forEach(r=>{
+   const d=document.createElement('div');d.className='layer';
+   d.innerHTML=`<div class="layerRow"><div class="name">${esc(r.name)} · ${r.geo.features.length.toLocaleString('th-TH')} รายการ</div><button class="danger" data-layer="${r.id}">ลบ</button></div>`;
+   box.appendChild(d);
+ });
+ box.querySelectorAll('[data-layer]').forEach(btn=>btn.onclick=async()=>{
+   const id=btn.dataset.layer;
+   const rec=layers.find(x=>x.id===id);if(!rec)return;
+   if(!confirm('ยืนยันลบชั้นข้อมูล '+rec.name+' ?'))return;
+   await del('layers',id);await reload();status('✅ ลบชั้นข้อมูลแล้ว');
+ });
+}
 async function reload(){layers=await byOrg('layers',currentOrgId);buildings=await byOrg('buildings',currentOrgId);surveys=await byOrg('surveys',currentOrgId);render()}
 
 async function refreshOrgs(){
@@ -314,6 +331,33 @@ async function refreshOrgs(){
  const s=document.getElementById('orgSelect');s.innerHTML='';
  os.sort((a,b)=>a.name.localeCompare(b.name,'th')).forEach(o=>s.add(new Option(o.name,o.id)));
  if(!currentOrgId||!os.some(o=>o.id===currentOrgId))currentOrgId=os[0].id;s.value=currentOrgId;await reload();
+}
+
+
+function openParcelEdit(f){
+ const p=f.properties||{};
+ const body=
+  `<div class="codebox">แก้ไขข้อมูลแปลง</div>`+
+  field('รหัสแปลง','pcod',p.parcel_cod||p.parcel_code||'')+
+  field('เลขแปลง','pno',p.parcel_no||'')+
+  field('เลขที่ดิน','pland',p.land_no||'')+
+  field('ระวาง / mapsheet','pmap',p.mapsheet||p.utm_map||'')+
+  `<div class="field"><label>หมายเหตุ</label><textarea id="pnote">${esc(p.note||'')}</textarea></div>`;
+ openModal('แก้ไขแปลงที่ดิน',body,async()=>{
+   p.parcel_cod=document.getElementById('pcod').value.trim();
+   p.parcel_no=document.getElementById('pno').value.trim();
+   p.land_no=document.getElementById('pland').value.trim();
+   p.mapsheet=document.getElementById('pmap').value.trim();
+   p.note=document.getElementById('pnote').value;
+   const rec=layers.find(r=>r.geo.features.includes(f));
+   if(rec)await put('layers',rec);
+   closeModal();await reload();status('✅ แก้ไขข้อมูลแปลงแล้ว');
+ },async()=>{
+   const rec=layers.find(r=>r.geo.features.includes(f));
+   if(!rec)return;
+   rec.geo.features=rec.geo.features.filter(x=>x!==f);
+   await put('layers',rec);closeModal();await reload();status('✅ ลบแปลงแล้ว');
+ });
 }
 
 function openBuildAdd(ll,f){
@@ -348,6 +392,22 @@ function openBuildEdit(b){
  },async()=>{await del('buildings',b.id);closeModal();await reload();status('✅ ลบ '+b.buildingCode+' แล้ว')});
 }
 
+
+window.editSurvey=id=>{
+ const s=surveys.find(x=>x.id===id);if(!s)return;
+ const body=`<div class="codebox">แปลง: ${esc(s.parcelCode)}</div>`+
+ `<div class="field"><label>สถานะ</label><select id="ss"><option ${s.status==='สำรวจแล้ว'?'selected':''}>สำรวจแล้ว</option><option ${s.status==='ตรวจแล้ว'?'selected':''}>ตรวจแล้ว</option><option ${s.status==='มีการแก้ไข'?'selected':''}>มีการแก้ไข</option><option ${s.status==='ต้องกลับไปตรวจ'?'selected':''}>ต้องกลับไปตรวจ</option></select></div>`+
+ `<div class="field"><label>หมายเหตุ</label><textarea id="sn">${esc(s.note||'')}</textarea></div>`;
+ openModal('แก้ไขสถานะสำรวจ',body,async()=>{
+   s.status=document.getElementById('ss').value;s.note=document.getElementById('sn').value;s.updatedAt=Date.now();
+   await put('surveys',s);closeModal();await reload();status('✅ แก้ไขสถานะสำรวจแล้ว');
+ },async()=>{await del('surveys',s.id);closeModal();await reload();status('✅ ลบจุดสำรวจแล้ว')});
+};
+window.removeSurvey=async id=>{
+ const s=surveys.find(x=>x.id===id);if(!s)return;
+ if(confirm('ยืนยันลบจุดสำรวจแปลง '+s.parcelCode+' ?')){await del('surveys',id);await reload();status('✅ ลบจุดสำรวจแล้ว')}
+};
+
 function openSurveyAdd(ll,f){
  const pc=normalizeCode(parcelCode(f));if(!pc)return alert('แปลงนี้ไม่มีรหัสแปลง');
  const body=`<div class="codebox">แปลง: ${esc(pc)}</div>`+
@@ -377,6 +437,14 @@ document.getElementById('modalDelete').onclick=async()=>{if(activeModal?.onDelet
 document.getElementById('addOrg').onclick=async()=>{
  try{const n=document.getElementById('newOrgName').value.trim();if(!n)return alert('กรุณากรอกชื่อ อปท.');
  const o={id:uuid(),name:n};await put('orgs',o);currentOrgId=o.id;document.getElementById('newOrgName').value='';await refreshOrgs();status('✅ เพิ่ม อปท. '+n+' แล้ว')}catch(e){alert('เพิ่ม อปท. ไม่สำเร็จ: '+e.message)}
+};
+document.getElementById('delOrg').onclick=async()=>{
+ const orgs=await all('orgs');const o=orgs.find(x=>x.id===currentOrgId);if(!o)return;
+ if(!confirm('ยืนยันลบ อปท. "'+o.name+'" และข้อมูลใน อปท. นี้ทั้งหมด?'))return;
+ for(const rec of await byOrg('layers',currentOrgId))await del('layers',rec.id);
+ for(const rec of await byOrg('buildings',currentOrgId))await del('buildings',rec.id);
+ for(const rec of await byOrg('surveys',currentOrgId))await del('surveys',rec.id);
+ await del('orgs',currentOrgId);currentOrgId=null;await refreshOrgs();status('✅ ลบ อปท. แล้ว');
 };
 document.getElementById('orgSelect').onchange=async e=>{currentOrgId=e.target.value;await reload();status('✅ เปลี่ยน อปท. แล้ว');if(window.innerWidth<=760)setSideOpen(false)};
 document.getElementById('mode').onchange=e=>{mode=e.target.value;status('โหมด: '+e.target.options[e.target.selectedIndex].text);if(window.innerWidth<=760)setSideOpen(false)};
@@ -415,8 +483,14 @@ document.getElementById('fileInput').onchange=async e=>{
 
 document.getElementById('csvBuild').onclick=()=>{const rows=[['parcel_cod','building_code','b_code','b_type','b_chb','b_room','wide','long','lu','b_age','name','b_address','b_moo','note','latitude','longitude']];buildings.forEach(b=>rows.push([b.parcelCode,b.buildingCode,b.b_code,b.b_type,b.b_chb,b.b_room,b.wide,b.long,b.lu,b.b_age,b.name,b.b_address,b.b_moo,b.note,b.lat,b.lng]));csv('buildings_'+stamp()+'.csv',rows);status('✅ Export CSV สิ่งปลูกสร้างแล้ว')};
 document.getElementById('csvSurvey').onclick=()=>{const rows=[['parcel_cod','status','note','latitude','longitude','updated_at']];surveys.forEach(s=>rows.push([s.parcelCode,s.status,s.note,s.lat,s.lng,new Date(s.updatedAt).toISOString()]));csv('surveys_'+stamp()+'.csv',rows);status('✅ Export CSV สำรวจแล้ว')};
-document.getElementById('backup').onclick=async()=>{const pack={type:'SOMPORN_CLEAN_V2_BACKUP',at:new Date().toISOString(),orgs:await all('orgs'),layers:await all('layers'),buildings:await all('buildings'),surveys:await all('surveys')};download('SOMPORN_BACKUP_'+stamp()+'.json',JSON.stringify(pack,null,2),'application/json');status('✅ Backup ทั้งระบบแล้ว')};
-document.getElementById('restore').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const p=JSON.parse(await f.text());if(p.type!=='SOMPORN_CLEAN_V2_BACKUP')throw new Error('ไฟล์ Backup ไม่ตรงรุ่น');if(!confirm('กู้คืนข้อมูลทั้งหมด?'))return;
+document.getElementById('csvAll').onclick=()=>{
+ const rows=[['record_type','parcel_cod','building_code','b_code','b_type','b_chb','b_room','wide','long','lu','b_age','name','b_address','b_moo','note','survey_status','latitude','longitude']];
+ buildings.forEach(b=>rows.push(['building',b.parcelCode,b.buildingCode,b.b_code,b.b_type,b.b_chb,b.b_room,b.wide,b.long,b.lu,b.b_age,b.name,b.b_address,b.b_moo,b.note,'',b.lat,b.lng]));
+ surveys.forEach(s=>rows.push(['survey',s.parcelCode,'','','','','','','','','','','','',s.note,s.status,s.lat,s.lng]));
+ csv('all_data_'+stamp()+'.csv',rows);status('✅ Export CSV รวมข้อมูลแล้ว');
+};
+document.getElementById('backup').onclick=async()=>{const pack={type:'SOMPORN_FINAL_V4_BACKUP',at:new Date().toISOString(),orgs:await all('orgs'),layers:await all('layers'),buildings:await all('buildings'),surveys:await all('surveys')};download('SOMPORN_BACKUP_'+stamp()+'.json',JSON.stringify(pack,null,2),'application/json');status('✅ Backup ทั้งระบบแล้ว')};
+document.getElementById('restore').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const p=JSON.parse(await f.text());if(!['SOMPORN_FINAL_V4_BACKUP','SOMPORN_CLEAN_V2_BACKUP'].includes(p.type))throw new Error('ไฟล์ Backup ไม่ตรงรุ่น');if(!confirm('กู้คืนข้อมูลทั้งหมด?'))return;
  for(const n of ['orgs','layers','buildings','surveys'])await reqP(st(n,'readwrite').clear());
  for(const x of p.orgs||[])await put('orgs',x);for(const x of p.layers||[])await put('layers',x);for(const x of p.buildings||[])await put('buildings',x);for(const x of p.surveys||[])await put('surveys',x);
  currentOrgId=null;await refreshOrgs();status('✅ Restore สำเร็จ');alert('✅ กู้คืนข้อมูลเรียบร้อย')}catch(err){alert('Restore ไม่สำเร็จ: '+err.message)}e.target.value=''};
