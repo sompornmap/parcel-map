@@ -1,15 +1,14 @@
-# SOMPORN MOBILE CLOUD V5 READY
+# SOMPORN MOBILE CLOUD V6 DIAG
 
-Supabase URL + Publishable Key ถูกฝังไว้ใน index.html แล้ว
-ผู้ใช้งานไม่ต้องกรอกค่า Cloud อีก
+เวอร์ชันนี้แก้ปัญหา "คอมเห็น แต่มือถือไม่เห็น"
 
-การทำงาน:
-- เปิดเว็บ -> เชื่อม Cloud อัตโนมัติ
-- คอมนำเข้า KML/GeoJSON -> ส่งขึ้น Cloud ทันที
-- มือถือเปิด/รีเฟรช -> โหลดข้อมูลกลาง
-- มือถือเพิ่ม/แก้ไข/ลบ -> ส่งขึ้น Cloud
-- คอมรีเฟรช -> เห็นข้อมูลล่าสุด
-- Export CSV จากคอม
+เพิ่ม:
+- แสดง V6 DIAG บนแผนที่ เพื่อเช็กว่ามือถือเปิดไฟล์ใหม่จริง
+- ตรวจ Cloud ตอนเปิดเว็บ
+- บอกสาเหตุชัดเจนถ้าตารางไม่มี / RLS บล็อก / ไม่มีอินเทอร์เน็ต
+- หลังคอมนำเข้า จะ Push Cloud ทันทีและอ่านกลับเพื่อตรวจยืนยัน
+- มือถือ Pull Cloud ตอนเปิด, focus, pageshow และทุก 5 วินาที
+- แสดงจำนวนแปลงและสิ่งปลูกสร้างที่อ่านได้จาก Cloud
 
-ถ้าฐาน Supabase ยังไม่มีตาราง somporn_shared_state:
-Run SOMPORN_SETUP_CLOUD.sql หนึ่งครั้งใน Supabase SQL Editor
+ถ้าขึ้นว่า Cloud ไม่มีตาราง หรือ RLS:
+Run SOMPORN_SETUP_CLOUD.sql ใน Supabase SQL Editor 1 ครั้ง
