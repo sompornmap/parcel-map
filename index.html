@@ -1,751 +1,437 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SOMPORN Multi-Org Parcel Manager STABLE V2</title>
+<title>SOMPORN Parcel MOBILE V3</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-html,body{height:100%;margin:0;font-family:Tahoma,Arial,sans-serif;background:#f3f4f6}
-*{box-sizing:border-box}
-#app{height:100%;display:flex}
-#sidebar{width:330px;background:#fff;border-right:1px solid #ddd;display:flex;flex-direction:column;z-index:1200}
-#brand{padding:13px;border-bottom:1px solid #eee}
-#brand h2{margin:0;font-size:17px}
-.sub{font-size:11px;color:#666;line-height:1.4}
-#orgbar,#tools{padding:9px;border-bottom:1px solid #eee}
-.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-select,input,textarea,button,.filebtn{font-family:inherit}
-select,input,textarea{border:1px solid #bbb;border-radius:8px;padding:8px;background:#fff}
-button,.filebtn{border:0;border-radius:8px;padding:8px 9px;cursor:pointer;background:#eee;font-size:12px}
-.primary{background:#111;color:#fff}.good{background:#0a8f4d;color:#fff}.danger{background:#c62828;color:#fff}.blue{background:#1769e0;color:#fff}.warn{background:#ffb020;color:#111}
-#orgSelect{width:100%}
-#newOrgName{flex:1;min-width:140px}
-#modeSelect{width:100%;font-size:13px}
-#layers{padding:9px;overflow:auto;flex:1}
-.layer{border:1px solid #ddd;border-radius:9px;padding:8px;margin-bottom:7px;background:#fafafa}
-.layerHead{display:flex;gap:6px;align-items:center}
-.layerName{font-weight:bold;font-size:12px;flex:1;word-break:break-word}
-.meta{font-size:10px;color:#666;margin-top:4px}
-#main{flex:1;position:relative}
-#map{position:absolute;inset:0}
-#topbar{position:absolute;z-index:1000;top:7px;left:50%;transform:translateX(-50%);width:min(96%,900px);background:rgba(255,255,255,.97);border-radius:12px;padding:7px;box-shadow:0 2px 14px rgba(0,0,0,.22)}
-#search{flex:1;min-width:180px;font-size:14px}
-#status{font-size:11px;color:#555;margin-top:4px}
-#file{display:none}
-#modal{position:fixed;z-index:3000;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;padding:12px}
-#modalCard{background:#fff;border-radius:12px;width:min(96vw,520px);max-height:88vh;overflow:auto;padding:14px;box-shadow:0 8px 28px rgba(0,0,0,.35)}
-#modalCard h3{margin:0 0 10px;font-size:16px}
-.field{margin-bottom:8px}
-.field label{display:block;font-size:11px;font-weight:bold;margin-bottom:3px}
-.field input,.field select,.field textarea{width:100%}
-.codebox{padding:8px;border-radius:8px;background:#f1f3f5;font-size:12px;font-weight:bold}
-.badge{display:inline-block;background:#eee;border-radius:10px;padding:3px 6px;font-size:10px;margin-right:3px}
-.parcel-label{font-size:10px;font-weight:bold;background:rgba(255,255,255,.8);border:1px solid #555;border-radius:4px;padding:1px 3px;white-space:nowrap}
-.popup-table{border-collapse:collapse;font-size:12px;min-width:220px}
-.popup-table td{padding:3px 5px;border-bottom:1px solid #eee;vertical-align:top}
-.popup-table td:first-child{font-weight:bold}.popup-actions{display:flex;gap:5px;margin-top:8px}.popup-actions button{flex:1}.popup-actions{display:flex;gap:5px;margin-top:8px}.popup-actions button{flex:1}
+*{box-sizing:border-box} html,body{height:100%;margin:0;font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;color:#17202a}
+button,input,select,textarea{font:inherit} button,.filebtn{border:0;border-radius:8px;padding:8px 10px;cursor:pointer;background:#e9ecef}
+button.primary,.filebtn.primary{background:#0d6efd;color:#fff} button.good{background:#198754;color:#fff}
+button.warn,.filebtn.warn{background:#f59f00;color:#fff} button.danger{background:#dc3545;color:#fff}
+#app{height:100%;display:grid;grid-template-columns:330px 1fr}
+#side{overflow:auto;background:#fff;border-right:1px solid #dfe3e8;padding:12px;z-index:1000}
+#mapWrap{position:relative;min-width:0} #map{position:absolute;inset:0;background:#dceafa}
+h2{font-size:18px;margin:0 0 2px}.sub{font-size:11px;color:#667085}.section{border-top:1px solid #e5e7eb;margin-top:10px;padding-top:10px}
+.row{display:flex;gap:6px;align-items:center}.row>*{min-width:0}.grow{flex:1}
+input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:8px;background:#fff}
+textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{display:block;font-size:11px;font-weight:700;margin-bottom:3px}
+#searchBox{position:sticky;top:-12px;background:#fff;padding:10px 0 8px;z-index:10;border-bottom:1px solid #eee}
+#status{margin-top:8px;padding:8px;border-radius:8px;background:#eef4ff;font-size:12px;min-height:34px}
+#layerList{font-size:11px}.layer{padding:7px;border:1px solid #e5e7eb;border-radius:7px;margin-top:5px}
+#topMobile{display:none;position:absolute;top:8px;left:8px;z-index:800}
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center;padding:12px}
+#modal.open{display:flex} #card{background:#fff;border-radius:12px;width:min(520px,100%);max-height:92vh;overflow:auto;padding:14px}
+#modalActions{display:flex;gap:6px;justify-content:flex-end;margin-top:10px}
+.codebox{background:#f1f5f9;padding:8px;border-radius:8px;font-size:12px;font-weight:700}
+.popup-actions{display:flex;gap:4px;margin-top:8px}.popup-actions button{flex:1;padding:6px;font-size:11px}
+.parcel-label{background:rgba(255,255,255,.84);padding:1px 3px;border:1px solid #555;border-radius:3px;font-weight:700;font-size:10px}
 @media(max-width:760px){
- #sidebar{position:absolute;left:0;top:0;bottom:0;width:min(88vw,340px);transform:translateX(-100%);transition:.2s;box-shadow:2px 0 12px rgba(0,0,0,.2)}
- #sidebar.open{transform:translateX(0)}
- #topbar{width:94%;top:5px}
- #search{min-width:140px;flex-basis:55%}
+ #app{display:block} #side{position:absolute;left:0;top:0;bottom:0;width:min(90vw,350px);transform:translateX(-100%);transition:.2s;box-shadow:2px 0 15px #0003}
+ #side.open{transform:translateX(0)} #mapWrap{height:100%} #topMobile{display:block}
 }
 </style>
+
+<style>
+.mobile-side-head{display:none}
+#sideOverlay{display:none}
+@media(max-width:760px){
+  #side{
+    width:min(92vw,380px);
+    z-index:1600;
+    padding-top:8px;
+  }
+  #side.open{transform:translateX(0)}
+  #sideOverlay{
+    display:block;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.38);
+    z-index:1500;
+    opacity:0;
+    pointer-events:none;
+    transition:.18s;
+  }
+  #sideOverlay.open{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .mobile-side-head{
+    display:flex;
+    position:sticky;
+    top:0;
+    z-index:30;
+    background:#fff;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:4px 0 8px;
+    border-bottom:1px solid #e5e7eb;
+    margin-bottom:5px;
+  }
+  #topMobile{
+    display:block;
+    position:absolute;
+    top:12px;
+    left:12px;
+    z-index:1200;
+    background:#0d6efd;
+    color:#fff;
+    border-radius:10px;
+    padding:9px 12px;
+    box-shadow:0 2px 10px rgba(0,0,0,.22);
+    font-weight:700;
+  }
+  #mapWrap{height:100vh}
+  #searchBox{top:42px}
+}
+</style>
+
 </head>
 <body>
 <div id="app">
-<aside id="sidebar">
-  <div id="brand">
-    <h2>SOMPORN Multi-Org Parcel STABLE V2</h2>
-    <div class="sub">แปลงที่ดิน + สิ่งปลูกสร้าง + จุดสถานะสำรวจ</div>
+<div id="sideOverlay"></div>
+<aside id="side">
+  <div class="mobile-side-head">
+    <b>เมนูงานสำรวจ</b>
+    <button id="closeSide" class="danger">✕ ปิด</button>
   </div>
-
-  <div id="orgbar">
-    <select id="orgSelect"></select>
-    <div class="row" style="margin-top:6px">
-      <input id="newOrgName" placeholder="ชื่อ อปท. ใหม่">
-      <button id="addOrg" class="good">+ อปท.</button>
+  <div id="searchBox">
+    <div class="field"><label>🔎 ค้นหารหัสแปลง / รหัสสิ่งปลูกสร้าง</label>
+      <div class="row"><input id="search" class="grow" placeholder="เช่น 02B019"><button id="btnSearch" class="primary">ค้นหา</button></div>
     </div>
   </div>
 
-  <div id="tools">
-    <div class="field" style="margin:0">
-      <label>โหมดทำงาน</label>
-      <select id="modeSelect">
-        <option value="view">ดูข้อมูล / ค้นหา</option>
-        <option value="parcel-edit">แก้ไขแปลงที่ดิน</option>
+  <h2>SOMPORN Parcel MOBILE V3</h2>
+  <div class="sub">ระบบแปลงที่ดิน + สิ่งปลูกสร้าง + จุดสำรวจ</div>
+
+  <div class="section">
+    <div class="field"><label>อปท.</label><select id="orgSelect"></select></div>
+    <div class="row"><input id="newOrgName" class="grow" placeholder="ชื่อ อปท. ใหม่"><button id="addOrg" class="good">+ เพิ่ม</button></div>
+  </div>
+
+  <div class="section">
+    <div class="field"><label>โหมดทำงาน</label>
+      <select id="mode">
+        <option value="view">ดูข้อมูล</option>
         <option value="building-add">เพิ่มสิ่งปลูกสร้าง</option>
-        <option value="building-edit">แก้ไข/ลบสิ่งปลูกสร้าง</option>
-        <option value="survey-add">ทำเครื่องหมายแปลงสำรวจแล้ว</option>
-        <option value="survey-edit">แก้ไข/ลบจุดสถานะสำรวจ</option>
+        <option value="survey-add">ทำเครื่องหมายสำรวจ</option>
       </select>
     </div>
-    <div class="row" style="margin-top:7px">
-      <button id="toggleLabels">🏷 เปิดรหัสแปลง</button>
-      <label class="filebtn blue" for="file">📂 นำเข้า KML/GeoJSON</label>
-      <input id="file" type="file" accept=".kml,.json,.geojson">
+    <div class="row">
+      <label class="filebtn primary grow" for="fileInput">📂 นำเข้า KML / JSON</label>
+      <input id="fileInput" type="file" accept=".kml,.json,.geojson" hidden>
+      <button id="toggleLabels">🏷 รหัสแปลง</button>
     </div>
     <div class="row" style="margin-top:6px">
-      <button id="exportBuildings">⬇ CSV สิ่งปลูกสร้าง</button>
-      <button id="exportSurvey">⬇ CSV สำรวจ</button>
-      <button id="exportAllCsv">⬇ CSV รวมข้อมูล</button>
-    </div>
-    <div class="row" style="margin-top:6px">
-      <button id="backupAll" class="good">💾 สำรองข้อมูลทั้งหมด</button>
-      <label class="filebtn warn" for="restoreAll">♻ กู้คืนข้อมูล</label>
-      <input id="restoreAll" type="file" accept=".json" style="display:none">
-    </div>
-    <div class="sub" style="margin-top:6px">
-      Building schema: parcel_cod, b_code, b_type, b_chb, b_room, wide, long, lu, b_age, name, b_address, b_moo, photo, note
-    </div>
-    <div class="sub" style="margin-top:6px;padding:6px;border:1px solid #ddd;border-radius:8px;background:#fafafa">
-      Dropdown แสดงชื่อไทยเต็ม ส่วนรหัส LTAX เก็บไว้ด้านหลังและใช้ตอน Export<br>
-      การใช้ประโยชน์: เกษตรกรรม / ที่อยู่อาศัย / อื่น ๆ / ทิ้งไว้ว่างเปล่า-รกร้าง
+      <button id="satBtn" class="primary grow">🛰 ดาวเทียม</button>
+      <button id="osmBtn" class="grow">🗺 ถนน</button>
+      <button id="gpsBtn">📍 ฉัน</button>
     </div>
   </div>
 
-  <div id="layers">
-    <div id="layerList"></div>
+  <div class="section">
+    <div class="row"><button id="csvBuild" class="grow">⬇ CSV สิ่งปลูกสร้าง</button><button id="csvSurvey" class="grow">⬇ CSV สำรวจ</button></div>
+    <div class="row" style="margin-top:6px"><button id="backup" class="good grow">💾 Backup JSON</button><label for="restore" class="filebtn warn grow">♻ Restore</label><input id="restore" type="file" accept=".json" hidden></div>
   </div>
+
+  <div id="status">กำลังเริ่มระบบ...</div>
+
+  <div class="section"><b style="font-size:12px">ชั้นข้อมูล</b><div id="layerList"></div></div>
 </aside>
 
-<main id="main">
+<main id="mapWrap">
+  <button id="topMobile">☰ เมนู</button>
   <div id="map"></div>
-  <div id="topbar">
-    <div class="row">
-      <button id="menuBtn">☰</button>
-      <input id="search" placeholder="ค้นหารหัสแปลง / เลขแปลง / รหัสสิ่งปลูกสร้าง">
-      <button id="btnSearch" class="primary">ค้นหา</button>
-      <button id="btnMe">📍 ฉัน</button>
-    </div>
-    <div id="status">พร้อมใช้งาน</div>
-  </div>
 </main>
 </div>
 
 <div id="modal">
-  <div id="modalCard">
-    <h3 id="modalTitle">ข้อมูล</h3>
-    <div id="modalBody"></div>
-    <div class="row" style="justify-content:flex-end;margin-top:10px">
-      <button id="modalDelete" class="danger" style="display:none">ลบ</button>
-      <button id="modalCancel">ยกเลิก</button>
-      <button id="modalSave" class="good">บันทึก</button>
-    </div>
+ <div id="card">
+  <h3 id="modalTitle" style="margin-top:0">ข้อมูล</h3>
+  <div id="modalBody"></div>
+  <div id="modalActions">
+   <button id="modalDelete" class="danger" style="display:none">ลบ</button>
+   <button id="modalCancel">ยกเลิก</button>
+   <button id="modalSave" class="good">บันทึก</button>
   </div>
+ </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.js"></script>
 <script>
-proj4.defs("EPSG:4326","+proj=longlat +datum=WGS84 +no_defs +type=crs");
-proj4.defs("EPSG:24047","+proj=utm +zone=47 +ellps=evrst30 +towgs84=293,836,318,0.5,1.6,-2.8,2.1 +units=m +no_defs +type=crs");
-proj4.defs("EPSG:24048","+proj=utm +zone=48 +ellps=evrst30 +towgs84=293,836,318,0.5,1.6,-2.8,2.1 +units=m +no_defs +type=crs");
-const BUILDING_TYPE_MAP = {"1": "บ้านเดี่ยว", "2": "บ้านแถว (ทาวน์เฮาส์)", "3": "ห้องแถว", "4": "ตึกแถว", "5": "คลังสินค้า พื้นที่ไม่เกิน 300 ตารางเมตร", "6": "คลังสินค้า พื้นที่เกิน 300 ตารางเมตร", "7": "โรงจอดรถ", "8": "สถานศึกษา", "9": "โรงแรม สูงไม่เกิน 5 ชั้น", "10": "โรงแรม สูงเกิน 5 ชั้น", "11": "โรงมหรสพ", "12": "สถานพยาบาล", "13": "สำนักงาน สูงไม่เกิน 5 ชั้น", "14": "สำนักงาน สูงเกิน 5 ชั้น", "15": "ภัตตาคาร", "16": "ห้างสรรพสินค้า", "17": "อาคารพาณิชยกรรม ค้าปลีก/ค้าส่ง", "18": "สถานีบริการน้ำมันเชื้อเพลิง", "19": "โรงงาน", "20": "ตลาด พื้นที่ไม่เกิน 1,000 ตารางเมตร", "21": "ตลาด พื้นที่เกิน 1,000 ตารางเมตร", "22": "อาคารพาณิชย์ ประเภทโฮมออฟฟิศ", "23": "โรงงานซ่อมรถยนต์", "24": "อาคารจอดรถ", "25": "อาคารอยู่อาศัยรวม สูงไม่เกิน 5 ชั้น", "26": "อาคารอยู่อาศัยรวม สูงเกิน 5 ชั้น", "27": "อาคารพาณิชย์ ประเภทโชว์รูมรถยนต์", "28": "ห้องน้ำรวม", "29": "สระว่ายน้ำ", "30": "ลานกีฬาอเนกประสงค์", "31": "ลานคอนกรีต", "32": "ท่าเทียบเรือ", "33": "โรงเลี้ยงสัตว์", "34": "พื้นที่ตั้งป้ายโฆษณา", "35": "รั้วคอนกรีต", "36": "รั้วลวดถัก"};
-const BUILDING_USE_MAP = {"1": "เกษตรกรรม", "2": "ที่อยู่อาศัย", "3": "อื่น ๆ", "4": "ทิ้งไว้ว่างเปล่า / รกร้าง"};
-const BUILDING_MATERIAL_MAP = {"1": "ตึก", "2": "ไม้", "3": "ครึ่งตึกครึ่งไม้"};
-const BUILDING_DROPDOWNS = {
-  b_type: Object.keys(BUILDING_TYPE_MAP),
-  b_chb: Object.keys(BUILDING_MATERIAL_MAP),
-  b_room: ['1','2'],
-  lu: Object.keys(BUILDING_USE_MAP)
+'use strict';
+
+const DB_NAME='SOMPORN_CLEAN_V2_DB';
+const DB_VERSION=1;
+let db=null,currentOrgId=null,mode='view',showLabels=false;
+let layers=[],buildings=[],surveys=[],parcelLeaflets=[],searchIndex=[];
+let activeModal=null;
+
+const TYPE_MAP={
+ '1':'บ้านเดี่ยว','2':'บ้านแถว (ทาวน์เฮาส์)','3':'ห้องแถว','4':'ตึกแถว','5':'คลังสินค้าไม่เกิน 300 ตร.ม.',
+ '6':'คลังสินค้าเกิน 300 ตร.ม.','7':'โรงจอดรถ','8':'สถานศึกษา','9':'โรงแรมไม่เกิน 5 ชั้น','10':'โรงแรมเกิน 5 ชั้น',
+ '11':'โรงมหรสพ','12':'สถานพยาบาล','13':'สำนักงานไม่เกิน 5 ชั้น','14':'สำนักงานเกิน 5 ชั้น','15':'ภัตตาคาร',
+ '16':'ห้างสรรพสินค้า','17':'อาคารพาณิชยกรรม','18':'สถานีบริการน้ำมัน','19':'โรงงาน','20':'ตลาดไม่เกิน 1,000 ตร.ม.',
+ '21':'ตลาดเกิน 1,000 ตร.ม.','22':'โฮมออฟฟิศ','23':'โรงงานซ่อมรถยนต์','24':'อาคารจอดรถ',
+ '25':'อาคารอยู่อาศัยรวมไม่เกิน 5 ชั้น','26':'อาคารอยู่อาศัยรวมเกิน 5 ชั้น','27':'โชว์รูมรถยนต์',
+ '28':'ห้องน้ำรวม','29':'สระว่ายน้ำ','30':'ลานกีฬาอเนกประสงค์','31':'ลานคอนกรีต','32':'ท่าเทียบเรือ',
+ '33':'โรงเลี้ยงสัตว์','34':'พื้นที่ตั้งป้ายโฆษณา','35':'รั้วคอนกรีต','36':'รั้วลวดถัก'
 };
-function namedSelectHtml(label,id,map,val=''){
- const cur=String(val??'');
- let keys=Object.keys(map);
- if(cur && !keys.includes(cur)) keys.push(cur);
- return `<div class="field"><label>${label}</label><select id="${id}">`+
-   `<option value="">-- เลือก --</option>`+
-   keys.map(k=>{
-     let name=map[k];
-     if(!name) name='ประเภทเพิ่มเติมจากข้อมูลเดิม';
-     return `<option value="${esc(k)}" ${k===cur?'selected':''}>${esc(name)}</option>`;
-   }).join('')+
- `</select></div>`;
-}
-function simpleNamedSelectHtml(label,id,values,val=''){
- const cur=String(val??'');
- let opts=[''].concat(values.map(String));
- if(cur && !opts.includes(cur)) opts.push(cur);
- return `<div class="field"><label>${label}</label><select id="${id}">`+
- opts.map(o=>`<option value="${esc(o)}" ${o===cur?'selected':''}>${o===''?'-- เลือก --':esc(o)}</option>`).join('')+
- `</select></div>`;
-}
+const MAT_MAP={'1':'ตึก','2':'ไม้','3':'ครึ่งตึกครึ่งไม้'};
+const USE_MAP={'1':'เกษตรกรรม','2':'ที่อยู่อาศัย','3':'อื่น ๆ','4':'ทิ้งไว้ว่างเปล่า / รกร้าง'};
 
-
-const map=L.map('map',{preferCanvas:true}).setView([13.7,100.5],9);
-const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,attribution:'Imagery © Esri'}).addTo(map);
-const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,attribution:'© OpenStreetMap'});
-L.control.layers({'ดาวเทียม':sat,'ถนน':osm}).addTo(map);
-
-let db,currentOrgId=null,currentMode='view',showLabels=false;
-let parcelRecords=[], buildingRecords=[], surveyRecords=[];
-let parcelLeaflet=new Map(), buildingLeaflet=new Map(), surveyLeaflet=new Map(), labelLayer=L.layerGroup().addTo(map);
-let searchIndex=[], activeModal=null;
-
-function uuid(){return crypto.randomUUID?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(16).slice(2);}
-function reqP(r){return new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
-function store(name,mode='readonly'){return db.transaction(name,mode).objectStore(name);}
+function status(msg){document.getElementById('status').textContent=msg}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function uuid(){return crypto.randomUUID?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(16).slice(2)}
+function reqP(r){return new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 function openDB(){return new Promise((res,rej)=>{
- const r=indexedDB.open('SOMPORN_MULTI_ORG_V4',1);
- r.onupgradeneeded=e=>{
-   const d=e.target.result;
+ const r=indexedDB.open(DB_NAME,DB_VERSION);
+ r.onupgradeneeded=()=>{const d=r.result;
    d.createObjectStore('orgs',{keyPath:'id'});
    const l=d.createObjectStore('layers',{keyPath:'id'});l.createIndex('orgId','orgId');
    const b=d.createObjectStore('buildings',{keyPath:'id'});b.createIndex('orgId','orgId');
    const s=d.createObjectStore('surveys',{keyPath:'id'});s.createIndex('orgId','orgId');
  };
- r.onsuccess=()=>{db=r.result;res();};r.onerror=()=>rej(r.error);
-});}
-async function all(name){return await reqP(store(name).getAll());}
-async function byOrg(name,orgId){return await reqP(store(name).index('orgId').getAll(IDBKeyRange.only(orgId)));}
-async function put(name,obj){return await reqP(store(name,'readwrite').put(obj));}
-async function del(name,id){return await reqP(store(name,'readwrite').delete(id));}
+ r.onsuccess=()=>{db=r.result;res(db)};r.onerror=()=>rej(r.error);
+})}
+function st(name,mode='readonly'){return db.transaction(name,mode).objectStore(name)}
+async function put(name,obj){return reqP(st(name,'readwrite').put(obj))}
+async function del(name,id){return reqP(st(name,'readwrite').delete(id))}
+async function all(name){return reqP(st(name).getAll())}
+async function byOrg(name,id){return reqP(st(name).index('orgId').getAll(id))}
 
-function esc(v){return String(v??'-').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-function firstCoord(g){if(!g||!g.coordinates)return null;let c=g.coordinates;while(Array.isArray(c)&&Array.isArray(c[0]))c=c[0];return Array.isArray(c)&&typeof c[0]==='number'?c:null;}
-function detectCRS(o){
- const n=o?.crs?.properties?.name||'';const m=String(n).match(/EPSG(?:::|:)?(\d+)/i);if(m)return 'EPSG:'+m[1];
- const f=(o.features||[]).find(x=>x.geometry),c=f?firstCoord(f.geometry):null;
- if(c&&Math.abs(c[0])<=180&&Math.abs(c[1])<=90)return 'EPSG:4326';
- if(c&&c[0]>100000&&c[0]<900000&&c[1]>500000&&c[1]<2500000)return c[0]<500000?'EPSG:24048':'EPSG:24047';
- return 'EPSG:4326';
+const map=L.map('map',{zoomControl:true}).setView([13.75,100.5],7);
+const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:22,attribution:'Tiles © Esri'}).addTo(map);
+const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'© OpenStreetMap'});
+L.control.layers({'ดาวเทียม':sat,'ถนน':osm}).addTo(map);
+const drawn=L.layerGroup().addTo(map);
+
+function normalizeCode(v){return String(v??'').trim().replace(/\s+/g,'')}
+function parcelCode(f){const p=f?.properties||{};return p.parcel_cod||p.parcel_code||p.PARCEL_COD||p.parcel_no||p.id||''}
+function closeModal(){document.getElementById('modal').classList.remove('open');activeModal=null}
+function openModal(title,body,onSave,onDelete=null){
+ document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=body;
+ activeModal={onSave,onDelete};document.getElementById('modalDelete').style.display=onDelete?'inline-block':'none';
+ document.getElementById('modal').classList.add('open');
 }
-function transformGeometry(g,from){
- if(!g||!g.coordinates||from==='EPSG:4326')return g;
- function rec(c){if(typeof c[0]==='number'){const p=proj4(from,'EPSG:4326',[+c[0],+c[1]]);return [p[0],p[1],...(c.length>2?[c[2]]:[])];}return c.map(rec);}
- return {...g,coordinates:rec(g.coordinates)};
+function field(label,id,val='',type='text'){return `<div class="field"><label>${label}</label><input id="${id}" type="${type}" value="${esc(val)}"></div>`}
+function sel(label,id,mapObj,val=''){
+ return `<div class="field"><label>${label}</label><select id="${id}"><option value="">-- เลือก --</option>`+
+ Object.entries(mapObj).map(([k,n])=>`<option value="${k}" ${String(val)===k?'selected':''}>${esc(n)}</option>`).join('')+'</select></div>';
 }
-function normalizeGeo(o){let geo=o.type==='Feature'?{type:'FeatureCollection',features:[o]}:o;if(!geo||geo.type!=='FeatureCollection')throw new Error('ต้องเป็น GeoJSON');const crs=detectCRS(geo);return {crs,geo:{type:'FeatureCollection',features:(geo.features||[]).map(f=>({...f,geometry:transformGeometry(f.geometry,crs)}))}};}
-function parseCoordText(t){return t.trim().split(/\s+/).map(s=>s.split(',').map(Number)).filter(a=>Number.isFinite(a[0])&&Number.isFinite(a[1]));}
-function parseKML(text){
- const xml=new DOMParser().parseFromString(text,'application/xml');if(xml.querySelector('parsererror'))throw new Error('KML ไม่ถูกต้อง');const features=[];
- for(const pm of [...xml.getElementsByTagName('Placemark')]){
-   const p={};const nm=pm.getElementsByTagName('name')[0];if(nm)p.name=nm.textContent.trim();
-   for(const d of pm.getElementsByTagName('Data')){const k=d.getAttribute('name'),v=d.getElementsByTagName('value')[0];if(k&&v)p[k]=v.textContent.trim();}
-   const polys=[];for(const poly of pm.getElementsByTagName('Polygon')){
-     const rings=[];const outer=poly.getElementsByTagName('outerBoundaryIs')[0];if(outer){const c=outer.getElementsByTagName('coordinates')[0];if(c)rings.push(parseCoordText(c.textContent));}
-     for(const inner of poly.getElementsByTagName('innerBoundaryIs')){const c=inner.getElementsByTagName('coordinates')[0];if(c)rings.push(parseCoordText(c.textContent));}
-     if(rings.length)polys.push(rings);
+
+function parseKML(txt){
+ const xml=new DOMParser().parseFromString(txt,'text/xml');const fs=[];
+ xml.querySelectorAll('Placemark').forEach(pm=>{
+   const name=pm.querySelector('name')?.textContent||'';
+   let props={name};
+   pm.querySelectorAll('ExtendedData Data').forEach(d=>props[d.getAttribute('name')]=d.querySelector('value')?.textContent||'');
+   const poly=pm.querySelector('Polygon coordinates');
+   const point=pm.querySelector('Point coordinates');
+   if(poly){
+     const c=poly.textContent.trim().split(/\s+/).map(x=>x.split(',').slice(0,2).map(Number)).filter(x=>x.every(Number.isFinite));
+     if(c.length>=3)fs.push({type:'Feature',properties:props,geometry:{type:'Polygon',coordinates:[c]}});
+   }else if(point){
+     const c=point.textContent.trim().split(',').slice(0,2).map(Number);
+     if(c.every(Number.isFinite))fs.push({type:'Feature',properties:props,geometry:{type:'Point',coordinates:c}});
    }
-   if(polys.length)features.push({type:'Feature',properties:p,geometry:polys.length===1?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys}});
- }
- if(!features.length)throw new Error('ไม่พบ Polygon ใน KML');return {type:'FeatureCollection',features};
+ });
+ return {type:'FeatureCollection',features:fs};
 }
-
-function pointInRing(pt,ring){
- const x=pt.lng,y=pt.lat;let inside=false;
- for(let i=0,j=ring.length-1;i<ring.length;j=i++){
-   const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
-   const hit=((yi>y)!=(yj>y))&&(x<(xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi);if(hit)inside=!inside;
- }return inside;
+function normalizeGeo(obj){
+ if(obj.type==='FeatureCollection')return obj;
+ if(obj.type==='Feature')return {type:'FeatureCollection',features:[obj]};
+ if(obj.type && obj.coordinates)return {type:'FeatureCollection',features:[{type:'Feature',properties:{},geometry:obj}]};
+ throw new Error('รูปแบบ JSON/GeoJSON ไม่ถูกต้อง');
 }
-function pointInGeom(latlng,g){
- if(!g)return false;
- if(g.type==='Polygon'){if(!pointInRing(latlng,g.coordinates[0]))return false;for(let i=1;i<g.coordinates.length;i++)if(pointInRing(latlng,g.coordinates[i]))return false;return true;}
- if(g.type==='MultiPolygon')return g.coordinates.some(poly=>pointInGeom(latlng,{type:'Polygon',coordinates:poly}));
+function pointInRing(lng,lat,ring){let inside=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+ const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
+ const hit=((yi>lat)!=(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi||1e-12)+xi);if(hit)inside=!inside;
+}return inside}
+function contains(f,ll){
+ const g=f.geometry;if(!g)return false;
+ if(g.type==='Polygon')return pointInRing(ll.lng,ll.lat,g.coordinates[0]);
+ if(g.type==='MultiPolygon')return g.coordinates.some(p=>pointInRing(ll.lng,ll.lat,p[0]));
  return false;
 }
-function parcelCode(f){
- const p=f.properties||{};
- return String(p.parcel_cod||p.parcel_code||p.parcel_no||p.land_no||p.name||'').trim();
-}
-function cleanParcelCode(s){return String(s||'').replace(/\s+/g,'').replace(/[^A-Za-z0-9ก-๙]/g,'');}
-function findParcelAt(latlng){
- for(const rec of parcelRecords)for(let i=0;i<rec.geo.features.length;i++){const f=rec.geo.features[i];if(pointInGeom(latlng,f.geometry))return {rec,feature:f,featureIndex:i};}
- return null;
-}
-function nextBuildingCode(parcel){
- const base=cleanParcelCode(parcel);
- let max=0;
- for(const b of buildingRecords){
-   if(String(b.parcelCode)===base){
-     const m=String(b.buildingCode||'').match(/-B(\d+)$/i);if(m)max=Math.max(max,+m[1]);
-   }
- }
- return base+'-B'+String(max+1).padStart(3,'0');
-}
-function fieldHtml(label,id,val='',type='text'){return `<div class="field"><label>${label}</label><input id="${id}" type="${type}" value="${esc(val)}"></div>`;}
-function selectHtml(label,id,opts,val=''){return `<div class="field"><label>${label}</label><select id="${id}">${opts.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('')}</select></div>`;}
-function openModal(title,body,onSave,onDelete=null){
- document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=body;document.getElementById('modal').style.display='flex';
- activeModal={onSave,onDelete};document.getElementById('modalDelete').style.display=onDelete?'inline-block':'none';
-}
-function closeModal(){document.getElementById('modal').style.display='none';activeModal=null;}
-document.getElementById('modalCancel').onclick=closeModal;
-document.getElementById('modalSave').onclick=async()=>{if(activeModal?.onSave)await activeModal.onSave();};
-document.getElementById('modalDelete').onclick=async()=>{if(activeModal?.onDelete&&confirm('ยืนยันลบรายการนี้?'))await activeModal.onDelete();};
+function findParcel(ll){for(const r of layers)for(const f of r.geo.features)if(contains(f,ll))return f;return null}
 
-function clearMapData(){
- parcelLeaflet.forEach(l=>map.removeLayer(l));buildingLeaflet.forEach(l=>map.removeLayer(l));surveyLeaflet.forEach(l=>map.removeLayer(l));
- parcelLeaflet.clear();buildingLeaflet.clear();surveyLeaflet.clear();labelLayer.clearLayers();searchIndex=[];
+function nextBuildCode(pc){
+ let max=0;buildings.filter(b=>b.parcelCode===pc).forEach(b=>{const m=String(b.buildingCode||'').match(/-B(\d+)$/);if(m)max=Math.max(max,+m[1])});
+ return pc+'-B'+String(max+1).padStart(3,'0');
 }
 
-window.editBuildingById=function(id){
- const b=buildingRecords.find(x=>x.id===id);
- if(!b)return alert('ไม่พบข้อมูลสิ่งปลูกสร้าง');
- map.closePopup();
- openBuildingEdit(b);
-};
-window.deleteBuildingById=async function(id){
- const b=buildingRecords.find(x=>x.id===id);
- if(!b)return alert('ไม่พบข้อมูลสิ่งปลูกสร้าง');
- if(!confirm('ยืนยันลบ '+(b.buildingCode||'สิ่งปลูกสร้าง')+' ?'))return;
- await del('buildings',id);
- map.closePopup();
- await reloadOrg();
-};
-window.openBuildingNav=function(id){
- const b=buildingRecords.find(x=>x.id===id);
- if(!b)return alert('ไม่พบข้อมูลสิ่งปลูกสร้าง');
- const url='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(b.lat+','+b.lng)+'&travelmode=driving';
- window.open(url,'_blank');
-};
+function popupParcel(f,l){
+ const p=f.properties||{},pc=normalizeCode(parcelCode(f))||'-';
+ let center=null;try{center=l.getBounds().getCenter()}catch(e){}
+ return `<b>รหัสแปลง: ${esc(pc)}</b><br>`+
+ Object.entries(p).slice(0,8).map(([k,v])=>`${esc(k)}: ${esc(v)}<br>`).join('')+
+ (center?`<div class="popup-actions"><button onclick="navTo(${center.lat},${center.lng})">🧭 นำทาง</button></div>`:'');
+}
+function popupBuild(b){
+ return `<b>${esc(b.buildingCode)}</b><br>แปลง: ${esc(b.parcelCode)}<br>ประเภท: ${esc(TYPE_MAP[b.b_type]||'-')}<br>ลักษณะ: ${esc(MAT_MAP[b.b_chb]||'-')}<br>ใช้ประโยชน์: ${esc(USE_MAP[b.lu]||'-')}
+ <div class="popup-actions"><button onclick="editBuild('${b.id}')">✏ แก้ไข</button><button onclick="removeBuild('${b.id}')">🗑 ลบ</button><button onclick="navBuild('${b.id}')">🧭 นำทาง</button></div>`;
+}
+window.navTo=(lat,lng)=>window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,'_blank');
+window.navBuild=id=>{const b=buildings.find(x=>x.id===id);if(b)navTo(b.lat,b.lng)};
+window.editBuild=id=>{const b=buildings.find(x=>x.id===id);if(b)openBuildEdit(b)};
+window.removeBuild=async id=>{const b=buildings.find(x=>x.id===id);if(!b)return;if(confirm('ยืนยันลบ '+b.buildingCode+' ?')){await del('buildings',id);await reload();status('✅ ลบสิ่งปลูกสร้างแล้ว')}};
 
-function renderAll(){
- clearMapData();
- parcelRecords.forEach((rec,ri)=>{
-   const ll=L.geoJSON(rec.geo,{
-     renderer:L.canvas(),style:{color:'#ff2424',weight:1.25,fillOpacity:.04},
-     onEachFeature:(f,l)=>{
-       const code=parcelCode(f),key=Object.values(f.properties||{}).join(' ').toLowerCase();
-       searchIndex.push({type:'parcel',key,leaflet:l,record:rec,feature:f});
-       l.on('click',e=>{
-         if(currentMode==='parcel-edit'){L.DomEvent.stopPropagation(e);openParcelEdit(rec,f);}
-         else if(currentMode==='view')l.bindPopup(parcelPopup(f,l)).openPopup();
-       });
-       if(showLabels&&code){
-         try{const c=l.getBounds().getCenter();labelLayer.addLayer(L.marker(c,{icon:L.divIcon({className:'',html:`<span class="parcel-label">${esc(code)}</span>`})}));}catch(e){}
-       }
+function render(){
+ drawn.clearLayers();parcelLeaflets=[];searchIndex=[];
+ for(const r of layers){
+   for(const f of r.geo.features){
+     if(!f.geometry)continue;
+     if(['Polygon','MultiPolygon'].includes(f.geometry.type)){
+       const l=L.geoJSON(f,{style:{color:'#ff6b00',weight:2,fillOpacity:.08}}).addTo(drawn);
+       const inner=Object.values(l._layers)[0]||l;
+       parcelLeaflets.push(inner);
+       const pc=normalizeCode(parcelCode(f));
+       if(pc)searchIndex.push({type:'parcel',key:pc,feature:f,leaflet:inner});
+       inner.on('click',()=>{if(mode==='view')inner.bindPopup(popupParcel(f,inner)).openPopup()});
+       if(showLabels&&pc){try{inner.bindTooltip(pc,{permanent:true,direction:'center',className:'parcel-label'})}catch(e){}}
      }
-   }).addTo(map);parcelLeaflet.set(rec.id,ll);
- });
- buildingRecords.forEach(b=>{
-   const m=L.circleMarker([b.lat,b.lng],{radius:6,weight:2,fillOpacity:.8}).addTo(map);
-   m.bindTooltip(b.buildingCode||'อาคาร');
-   searchIndex.push({type:'building',key:(b.buildingCode+' '+b.parcelCode+' '+(b.houseNo||'')).toLowerCase(),leaflet:m,record:b});
-   m.on('click',e=>{
-   L.DomEvent.stopPropagation(e);
-   if(currentMode==='building-edit') openBuildingEdit(b);
-   else m.bindPopup(buildingPopup(b),{maxWidth:360}).openPopup();
- });
-   buildingLeaflet.set(b.id,m);
- });
- surveyRecords.forEach(s=>{
-   const m=L.circleMarker([s.lat,s.lng],{radius:5,weight:2,fillOpacity:.6}).addTo(map);
-   m.bindTooltip('สำรวจแล้ว '+s.parcelCode);
-   searchIndex.push({type:'survey',key:(s.parcelCode+' '+s.status+' '+(s.note||'')).toLowerCase(),leaflet:m,record:s});
-   m.on('click',e=>{if(currentMode==='survey-edit'){L.DomEvent.stopPropagation(e);openSurveyEdit(s);}else if(currentMode==='view')m.bindPopup(`<b>${esc(s.parcelCode)}</b><br>${esc(s.status)}<br>${esc(s.note||'')}`).openPopup();});
-   surveyLeaflet.set(s.id,m);
- });
- document.getElementById('status').textContent=`อปท. ปัจจุบัน · ${parcelRecords.reduce((a,r)=>a+r.geo.features.length,0)} แปลง · ${buildingRecords.length} สิ่งปลูกสร้าง · ${surveyRecords.length} จุดสำรวจ`;
-}
-function parcelPopup(f,l=null){
- const p=f.properties||{};
- const code=parcelCode(f)||'-';
- const rows=Object.entries(p).slice(0,12).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('');
- let nav='';
- if(l){
-   let c=null;
-   try{const b=l.getBounds();if(b&&b.isValid())c=b.getCenter();}catch(e){}
-   if(c){
-     nav=`<div class="popup-actions">
-       <button class="blue" onclick="openParcelNav(${c.lat},${c.lng})">🧭 นำทาง</button>
-       <button onclick="copyParcelCode('${String(code).replace(/'/g,"\\'")}')">📋 คัดลอกรหัส</button>
-     </div>`;
    }
  }
- return `<div class="codebox">รหัสแปลง: ${esc(code)}</div><table class="popup-table">${rows}</table>${nav}`;
+ for(const b of buildings){
+   const m=L.circleMarker([b.lat,b.lng],{radius:6,color:'#0d6efd',weight:2,fillOpacity:.9}).addTo(drawn).bindPopup(popupBuild(b));
+   searchIndex.push({type:'building',key:(b.buildingCode||'')+' '+(b.parcelCode||''),leaflet:m,record:b});
+ }
+ for(const s of surveys){
+   L.circleMarker([s.lat,s.lng],{radius:5,color:'#198754',weight:2,fillOpacity:.9}).addTo(drawn).bindPopup(`<b>${esc(s.parcelCode)}</b><br>${esc(s.status)}<br>${esc(s.note||'')}`);
+ }
+ renderLayers();
 }
-window.openParcelNav=function(lat,lng){
- const url='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(lat+','+lng)+'&travelmode=driving';
- window.open(url,'_blank');
-};
-window.copyParcelCode=function(code){
- if(navigator.clipboard){navigator.clipboard.writeText(code).then(()=>alert('คัดลอกรหัสแปลงแล้ว: '+code));}
- else alert('รหัสแปลง: '+code);
-};
-function buildingPopup(b){
- return `<b>${esc(b.buildingCode)}</b><br>แปลง: ${esc(b.parcelCode)}<br>
- ประเภท: ${esc(BUILDING_TYPE_MAP[String(b.b_type)]||'ประเภทเพิ่มเติม')} · ลักษณะ: ${esc(BUILDING_MATERIAL_MAP[String(b.b_chb)]||'-')} · ห้อง: ${esc(b.b_room||'-')}<br>
- กว้าง×ยาว: ${esc(b.wide||'-')} × ${esc(b.long||'-')} ม.<br>
- การใช้ประโยชน์: ${esc(BUILDING_USE_MAP[String(b.lu)]||'-')} · อายุ: ${esc(b.b_age||'-')} ปี<br>
- ชื่อ: ${esc(b.name||'-')}<br>บ้านเลขที่: ${esc(b.b_address||'-')} หมู่ ${esc(b.b_moo||'-')}<br>
- หมายเหตุ: ${esc(b.note||'-')}
- <div class="popup-actions">
-   <button class="good" onclick="editBuildingById('${b.id}')">✏ แก้ไข</button>
-   <button class="danger" onclick="deleteBuildingById('${b.id}')">🗑 ลบ</button>
-   <button class="blue" onclick="openBuildingNav('${b.id}')">🧭 นำทาง</button>
- </div>`;
-}
+function renderLayers(){const box=document.getElementById('layerList');box.innerHTML='';layers.forEach(r=>{const d=document.createElement('div');d.className='layer';d.textContent=`${r.name} · ${r.geo.features.length.toLocaleString('th-TH')} รายการ`;box.appendChild(d)})}
+async function reload(){layers=await byOrg('layers',currentOrgId);buildings=await byOrg('buildings',currentOrgId);surveys=await byOrg('surveys',currentOrgId);render()}
 
-function openParcelEdit(rec,f){
- const p=f.properties||{};
- const body=`<div class="codebox">รหัสแปลงปัจจุบัน: ${esc(parcelCode(f)||'-')}</div>`+
- fieldHtml('รหัสแปลง','p_code',p.parcel_cod||p.parcel_code||'')+
- fieldHtml('เลขแปลง','p_no',p.parcel_no||'')+
- fieldHtml('เลขที่ดิน','p_land',p.land_no||'')+
- fieldHtml('ระวาง','p_map',p.mapsheet||'')+
- `<div class="field"><label>หมายเหตุ</label><textarea id="p_note">${esc(p.note||'')}</textarea></div>`;
- openModal('แก้ไขแปลงที่ดิน',body,async()=>{
-   f.properties={...p,parcel_cod:document.getElementById('p_code').value.trim(),parcel_no:document.getElementById('p_no').value.trim(),land_no:document.getElementById('p_land').value.trim(),mapsheet:document.getElementById('p_map').value.trim(),note:document.getElementById('p_note').value.trim()};
-   await put('layers',rec);closeModal();renderAll();
- },async()=>{
-   rec.geo.features=rec.geo.features.filter(x=>x!==f);await put('layers',rec);closeModal();await reloadOrg();
- });
-}
-function openBuildingAdd(latlng,hit){
- const base=cleanParcelCode(parcelCode(hit.feature));if(!base)return alert('แปลงนี้ไม่มีรหัสแปลง จึงสร้างรหัสสิ่งปลูกสร้างไม่ได้');
- const code=nextBuildingCode(base);
- const seq=(code.match(/-B(\d+)$/i)||[])[1]||'001';
- const bCodeNum=String(parseInt(seq,10));
- const existing=buildingRecords.filter(b=>b.parcelCode===base).map(b=>b.buildingCode).join(', ');
- const body=`<div class="codebox">รหัสแปลง: ${esc(base)}<br>รหัสสิ่งปลูกสร้าง: ${esc(code)}<br>ลำดับ b_code: ${esc(bCodeNum)}<br>มีอยู่แล้ว: ${esc(existing||'ยังไม่มี')}</div>`+
- namedSelectHtml('ประเภทสิ่งปลูกสร้าง','b_type',BUILDING_TYPE_MAP)+
- namedSelectHtml('ลักษณะสิ่งปลูกสร้าง','b_chb',BUILDING_MATERIAL_MAP)+
- simpleNamedSelectHtml('จำนวนห้อง','b_room',BUILDING_DROPDOWNS.b_room)+
- fieldHtml('กว้าง เมตร (wide)','b_wide','', 'number')+
- fieldHtml('ยาว เมตร (long)','b_long','', 'number')+
- namedSelectHtml('การใช้ประโยชน์','b_lu',BUILDING_USE_MAP)+
- fieldHtml('อายุอาคาร ปี (b_age)','b_age','', 'number')+
- fieldHtml('ชื่อผู้เกี่ยวข้อง/เจ้าของ (name)','b_name')+
- fieldHtml('บ้านเลขที่ (b_address)','b_address')+
- fieldHtml('หมู่ (b_moo)','b_moo')+
- fieldHtml('รูปภาพ/ชื่อไฟล์ (photo)','b_photo')+
- `<div class="field"><label>หมายเหตุ (note)</label><textarea id="b_note"></textarea></div>`+
- `<div class="codebox">พิกัดอัตโนมัติ<br>Latitude: ${latlng.lat.toFixed(7)}<br>Longitude: ${latlng.lng.toFixed(7)}</div>`;
- openModal('เพิ่มสิ่งปลูกสร้าง',body,async()=>{
-   const b={
-     id:uuid(),orgId:currentOrgId,
-     parcelCode:base, buildingCode:code, b_code:bCodeNum,
-     b_type:document.getElementById('b_type').value.trim(),
-     b_chb:document.getElementById('b_chb').value.trim(),
-     b_room:document.getElementById('b_room').value.trim(),
-     wide:document.getElementById('b_wide').value.trim(),
-     long:document.getElementById('b_long').value.trim(),
-     lu:document.getElementById('b_lu').value.trim(),
-     b_age:document.getElementById('b_age').value.trim(),
-     name:document.getElementById('b_name').value.trim(),
-     b_address:document.getElementById('b_address').value.trim(),
-     b_moo:document.getElementById('b_moo').value.trim(),
-     photo:document.getElementById('b_photo').value.trim(),
-     note:document.getElementById('b_note').value.trim(),
-     lat:latlng.lat,lng:latlng.lng,createdAt:Date.now()
-   };
-   await put('buildings',b);closeModal();await reloadOrg();
- });
-}
-function openBuildingEdit(b){
- const body=`<div class="codebox">${esc(b.buildingCode)}<br>แปลง: ${esc(b.parcelCode)}<br>b_code: ${esc(b.b_code||'')}</div>`+
- namedSelectHtml('ประเภทสิ่งปลูกสร้าง','b_type',BUILDING_TYPE_MAP,b.b_type||'')+
- namedSelectHtml('ลักษณะสิ่งปลูกสร้าง','b_chb',BUILDING_MATERIAL_MAP,b.b_chb||'')+
- simpleNamedSelectHtml('จำนวนห้อง','b_room',BUILDING_DROPDOWNS.b_room,b.b_room||'')+
- fieldHtml('กว้าง เมตร (wide)','b_wide',b.wide||'','number')+
- fieldHtml('ยาว เมตร (long)','b_long',b.long||'','number')+
- namedSelectHtml('การใช้ประโยชน์','b_lu',BUILDING_USE_MAP,b.lu||'')+
- fieldHtml('อายุอาคาร ปี (b_age)','b_age',b.b_age||'','number')+
- fieldHtml('ชื่อผู้เกี่ยวข้อง/เจ้าของ (name)','b_name',b.name||'')+
- fieldHtml('บ้านเลขที่ (b_address)','b_address',b.b_address||'')+
- fieldHtml('หมู่ (b_moo)','b_moo',b.b_moo||'')+
- fieldHtml('รูปภาพ/ชื่อไฟล์ (photo)','b_photo',b.photo||'')+
- `<div class="field"><label>หมายเหตุ (note)</label><textarea id="b_note">${esc(b.note||'')}</textarea></div>`+
- `<div class="codebox">Latitude: ${Number(b.lat).toFixed(7)}<br>Longitude: ${Number(b.lng).toFixed(7)}</div>`;
- openModal('แก้ไขสิ่งปลูกสร้าง',body,async()=>{
-   Object.assign(b,{
-     b_type:document.getElementById('b_type').value.trim(),
-     b_chb:document.getElementById('b_chb').value.trim(),
-     b_room:document.getElementById('b_room').value.trim(),
-     wide:document.getElementById('b_wide').value.trim(),
-     long:document.getElementById('b_long').value.trim(),
-     lu:document.getElementById('b_lu').value.trim(),
-     b_age:document.getElementById('b_age').value.trim(),
-     name:document.getElementById('b_name').value.trim(),
-     b_address:document.getElementById('b_address').value.trim(),
-     b_moo:document.getElementById('b_moo').value.trim(),
-     photo:document.getElementById('b_photo').value.trim(),
-     note:document.getElementById('b_note').value.trim()
-   });
-   await put('buildings',b);closeModal();await reloadOrg();
- },async()=>{await del('buildings',b.id);closeModal();await reloadOrg();});
-}
-function openSurveyAdd(latlng,hit){
- const code=cleanParcelCode(parcelCode(hit.feature));
- const body=`<div class="codebox">แปลง: ${esc(code||'-')}</div>`+
- selectHtml('สถานะ','s_status',['ตรวจแล้ว','สำรวจแล้ว','มีการแก้ไข','ต้องกลับไปตรวจ','เสร็จสมบูรณ์'],'สำรวจแล้ว')+
- `<div class="field"><label>หมายเหตุ</label><textarea id="s_note"></textarea></div>`;
- openModal('บันทึกสถานะแปลง',body,async()=>{
-   const s={id:uuid(),orgId:currentOrgId,parcelCode:code,lat:latlng.lat,lng:latlng.lng,status:document.getElementById('s_status').value,note:document.getElementById('s_note').value.trim(),updatedAt:Date.now()};
-   await put('surveys',s);closeModal();await reloadOrg();
- });
-}
-function openSurveyEdit(s){
- const body=`<div class="codebox">แปลง: ${esc(s.parcelCode)}</div>`+
- selectHtml('สถานะ','s_status',['ตรวจแล้ว','สำรวจแล้ว','มีการแก้ไข','ต้องกลับไปตรวจ','เสร็จสมบูรณ์'],s.status||'สำรวจแล้ว')+
- `<div class="field"><label>หมายเหตุ</label><textarea id="s_note">${esc(s.note||'')}</textarea></div>`;
- openModal('แก้ไขสถานะสำรวจ',body,async()=>{
-   s.status=document.getElementById('s_status').value;s.note=document.getElementById('s_note').value.trim();s.updatedAt=Date.now();
-   await put('surveys',s);closeModal();await reloadOrg();
- },async()=>{await del('surveys',s.id);closeModal();await reloadOrg();});
-}
-
-map.on('click',e=>{
- if(currentMode==='building-add'){const h=findParcelAt(e.latlng);if(!h)return alert('จุดนี้อยู่นอกแปลงที่ดิน');openBuildingAdd(e.latlng,h);}
- else if(currentMode==='survey-add'){const h=findParcelAt(e.latlng);if(!h)return alert('จุดนี้อยู่นอกแปลงที่ดิน');openSurveyAdd(e.latlng,h);}
-});
-
-async function reloadOrg(){
- parcelRecords=await byOrg('layers',currentOrgId);buildingRecords=await byOrg('buildings',currentOrgId);surveyRecords=await byOrg('surveys',currentOrgId);renderAll();renderLayerList();
-}
-function renderLayerList(){
- const box=document.getElementById('layerList');box.innerHTML='';
- parcelRecords.forEach(r=>{const d=document.createElement('div');d.className='layer';d.innerHTML=`<div class="layerHead"><div class="layerName">${esc(r.name)}</div></div><div class="meta">${r.geo.features.length.toLocaleString('th-TH')} แปลง · ${esc(r.crs||'EPSG:4326')}</div>`;box.appendChild(d);});
-}
 async function refreshOrgs(){
- let orgs=await all('orgs');if(!orgs.length){const o={id:uuid(),name:'อปท. ตัวอย่าง'};await put('orgs',o);orgs=[o];}
- const s=document.getElementById('orgSelect');s.innerHTML='';orgs.sort((a,b)=>a.name.localeCompare(b.name,'th')).forEach(o=>{const op=document.createElement('option');op.value=o.id;op.textContent=o.name;s.appendChild(op);});
- if(!currentOrgId||!orgs.some(o=>o.id===currentOrgId))currentOrgId=orgs[0].id;s.value=currentOrgId;await reloadOrg();
-}
-document.getElementById('orgSelect').onchange=async e=>{currentOrgId=e.target.value;await reloadOrg();};
-document.getElementById('addOrg').onclick=async()=>{const n=document.getElementById('newOrgName').value.trim();if(!n)return;const o={id:uuid(),name:n};await put('orgs',o);currentOrgId=o.id;document.getElementById('newOrgName').value='';await refreshOrgs();};
-document.getElementById('modeSelect').onchange=e=>{currentMode=e.target.value;document.getElementById('status').textContent='โหมด: '+e.target.options[e.target.selectedIndex].text;};
-document.getElementById('toggleLabels').onclick=()=>{showLabels=!showLabels;document.getElementById('toggleLabels').textContent=showLabels?'🏷 ปิดรหัสแปลง':'🏷 เปิดรหัสแปลง';renderAll();};
-
-document.getElementById('file').addEventListener('change',async e=>{
- const file=e.target.files[0];if(!file)return;
- try{
-   if(!currentOrgId)throw new Error('กรุณาสร้างหรือเลือก อปท. ก่อนนำเข้าข้อมูล');
-   document.getElementById('status').textContent='กำลังนำเข้า '+file.name+' ...';
-
-   const text=await file.text();
-   let geo,crs='EPSG:4326';
-
-   if(file.name.toLowerCase().endsWith('.kml')){
-     geo=parseKML(text);
-   }else{
-     const n=normalizeGeo(JSON.parse(text));
-     geo=n.geo;
-     crs=n.crs;
-   }
-
-   const count=Array.isArray(geo?.features)?geo.features.length:0;
-   if(!count)throw new Error('ไม่พบ Feature ในไฟล์');
-
-   await put('layers',{
-     id:uuid(),
-     orgId:currentOrgId,
-     name:file.name,
-     crs,
-     geo,
-     createdAt:Date.now()
-   });
-
-   await reloadOrg();
-
-   const msg='✅ นำเข้าเรียบร้อย: '+file.name+' จำนวน '+count.toLocaleString('th-TH')+' รายการ';
-   document.getElementById('status').textContent=msg;
-   alert(msg);
- }catch(err){
-   const msg='❌ นำเข้าไม่สำเร็จ: '+(err.message||err);
-   document.getElementById('status').textContent=msg;
-   alert(msg);
- }
- e.target.value='';
-});
-
-function doSearch(){
- const raw=document.getElementById('search').value.trim();if(!raw)return;
- const q=raw.toLowerCase().replace(/\s+/g,'');
- let hits=searchIndex.filter(x=>String(x.key||'').toLowerCase().replace(/\s+/g,'').includes(q));
- if(!hits.length)return alert('ไม่พบข้อมูล: '+raw);
-
- // ให้รหัสแปลงที่ตรงที่สุดขึ้นก่อน
- hits.sort((a,b)=>{
-   const ac=a.type==='parcel'&&cleanParcelCode(parcelCode(a.feature)).toLowerCase()===q?0:1;
-   const bc=b.type==='parcel'&&cleanParcelCode(parcelCode(b.feature)).toLowerCase()===q?0:1;
-   return ac-bc;
- });
-
- const h=hits[0];
- try{
-   if(h.leaflet.getBounds)map.fitBounds(h.leaflet.getBounds(),{maxZoom:20,padding:[40,40]});
-   else map.setView(h.leaflet.getLatLng(),20);
- }catch(e){}
-
- if(h.type==='parcel')h.leaflet.bindPopup(parcelPopup(h.feature,h.leaflet),{maxWidth:340}).openPopup();
- else if(h.type==='building')h.leaflet.bindPopup(buildingPopup(h.record)).openPopup();
- else if(h.type==='survey')h.leaflet.openPopup?.();
-
- document.getElementById('status').textContent=`พบ ${hits.length} รายการ · แสดงรายการที่ตรงที่สุด`;
-}
-document.getElementById('btnSearch').onclick=doSearch;
-document.getElementById('search').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
-document.getElementById('btnMe').onclick=()=>navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude];map.setView(ll,19);L.circleMarker(ll,{radius:7,weight:3,fillOpacity:1}).addTo(map).bindPopup('ตำแหน่งฉัน').openPopup();},()=>alert('กรุณาอนุญาต Location'),{enableHighAccuracy:true});
-document.getElementById('menuBtn').onclick=()=>document.getElementById('sidebar').classList.toggle('open');
-
-function csvEscape(v){const s=String(v??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
-function downloadCSV(name,rows){
- const csv='\ufeff'+rows.map(r=>r.map(csvEscape).join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);
-}
-function downloadJSON(name,obj){
- const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json;charset=utf-8'});
- const a=document.createElement('a');
- a.href=URL.createObjectURL(blob);
- a.download=name;
- a.click();
- URL.revokeObjectURL(a.href);
-}
-function thaiDateStamp(){
- const d=new Date();
- const p=n=>String(n).padStart(2,'0');
- return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes());
+ let os=await all('orgs');
+ if(!os.length){const o={id:uuid(),name:'อปท. ตัวอย่าง'};await put('orgs',o);os=[o]}
+ const s=document.getElementById('orgSelect');s.innerHTML='';
+ os.sort((a,b)=>a.name.localeCompare(b.name,'th')).forEach(o=>s.add(new Option(o.name,o.id)));
+ if(!currentOrgId||!os.some(o=>o.id===currentOrgId))currentOrgId=os[0].id;s.value=currentOrgId;await reload();
 }
 
-document.getElementById('exportBuildings').onclick=()=>{
- const rows=[[
-   'parcel_cod','b_code','building_code','b_type','b_chb','b_room','wide','long','lu','b_age',
-   'name','b_address','b_moo','photo','note','latitude','longitude'
- ]];
- buildingRecords.forEach(b=>rows.push([
-   b.parcelCode,b.b_code||'',b.buildingCode,b.b_type||'',b.b_chb||'',b.b_room||'',
-   b.wide||'',b.long||'',b.lu||'',b.b_age||'',b.name||'',b.b_address||'',b.b_moo||'',
-   b.photo||'',b.note||'',b.lat,b.lng
- ]));
- downloadCSV('building_'+thaiDateStamp()+'.csv',rows);
-};
-document.getElementById('exportSurvey').onclick=()=>{
- const rows=[['parcel_code','latitude','longitude','status','note','updated_at']];
- surveyRecords.forEach(s=>rows.push([s.parcelCode,s.lat,s.lng,s.status,s.note,new Date(s.updatedAt||Date.now()).toISOString()]));downloadCSV('survey_status_'+thaiDateStamp()+'.csv',rows);
-};
-document.getElementById('exportAllCsv').onclick=()=>{
- const rows=[[
-  'record_type','parcel_cod','building_code','b_code','b_type','b_chb','b_room','wide','long','lu','b_age',
-  'name','b_address','b_moo','photo','note','survey_status','latitude','longitude'
- ]];
- buildingRecords.forEach(b=>rows.push([
-  'building',b.parcelCode,b.buildingCode,b.b_code||'',b.b_type||'',b.b_chb||'',b.b_room||'',
-  b.wide||'',b.long||'',b.lu||'',b.b_age||'',b.name||'',b.b_address||'',b.b_moo||'',b.photo||'',
-  b.note||'','',b.lat,b.lng
- ]));
- surveyRecords.forEach(s=>rows.push([
-  'survey',s.parcelCode,'','','','','','','','','','','','','',s.note||'',s.status||'',s.lat,s.lng
- ]));
- downloadCSV('survey_all_'+thaiDateStamp()+'.csv',rows);
-};
-
-
-
-document.getElementById('backupAll').onclick=async()=>{
- try{
-   const orgs=await all('orgs');
-   const layers=await all('layers');
-   const buildings=await all('buildings');
-   const surveys=await all('surveys');
-
-   const pack={
-     type:'SOMPORN_FULL_BACKUP_V1',
-     appVersion:'V10',
-     exportedAt:new Date().toISOString(),
-     currentOrgId:currentOrgId,
-     data:{
-       orgs:orgs,
-       layers:layers,
-       buildings:buildings,
-       surveys:surveys
-     }
-   };
-
-   const filename='SOMPORN_BACKUP_'+thaiDateStamp()+'.json';
-   downloadJSON(filename,pack);
-
-   document.getElementById('status').textContent=
-     `สำรองแล้ว · ${orgs.length} อปท. · ${layers.length} ชั้นข้อมูล · ${buildings.length} สิ่งปลูกสร้าง · ${surveys.length} จุดสำรวจ`;
- }catch(err){
-   alert('สำรองข้อมูลไม่สำเร็จ: '+err.message);
- }
-};
-
-async function clearStore(name){
- return await new Promise((res,rej)=>{
-   const req=store(name,'readwrite').clear();
-   req.onsuccess=()=>res();
-   req.onerror=()=>rej(req.error);
+function openBuildAdd(ll,f){
+ const pc=normalizeCode(parcelCode(f));if(!pc)return alert('แปลงนี้ไม่มีรหัสแปลง');
+ const code=nextBuildCode(pc);
+ const body=`<div class="codebox">แปลง: ${esc(pc)}<br>รหัสใหม่: ${esc(code)}</div>`+
+ sel('ประเภทสิ่งปลูกสร้าง','bt',TYPE_MAP)+sel('ลักษณะสิ่งปลูกสร้าง','bm',MAT_MAP)+sel('การใช้ประโยชน์','bu',USE_MAP)+
+ field('จำนวนห้อง','br','1','number')+field('กว้าง (ม.)','bw','', 'number')+field('ยาว (ม.)','bl','', 'number')+
+ field('อายุอาคาร (ปี)','ba','', 'number')+field('ชื่อ','bn')+field('บ้านเลขที่','bad')+field('หมู่','bmoo')+
+ `<div class="field"><label>หมายเหตุ</label><textarea id="bnote"></textarea></div>`;
+ openModal('เพิ่มสิ่งปลูกสร้าง',body,async()=>{
+   const b={id:uuid(),orgId:currentOrgId,parcelCode:pc,buildingCode:code,b_code:String(parseInt(code.match(/B(\d+)$/)[1],10)),
+    b_type:document.getElementById('bt').value,b_chb:document.getElementById('bm').value,lu:document.getElementById('bu').value,
+    b_room:document.getElementById('br').value,wide:document.getElementById('bw').value,long:document.getElementById('bl').value,
+    b_age:document.getElementById('ba').value,name:document.getElementById('bn').value,b_address:document.getElementById('bad').value,
+    b_moo:document.getElementById('bmoo').value,note:document.getElementById('bnote').value,lat:ll.lat,lng:ll.lng,updatedAt:Date.now()};
+   await put('buildings',b);closeModal();await reload();status('✅ บันทึก '+code+' แล้ว');
  });
 }
-async function bulkPut(name,items){
- for(const item of items||[]) await put(name,item);
+function openBuildEdit(b){
+ const body=`<div class="codebox">${esc(b.buildingCode)} · แปลง ${esc(b.parcelCode)}</div>`+
+ sel('ประเภทสิ่งปลูกสร้าง','bt',TYPE_MAP,b.b_type)+sel('ลักษณะสิ่งปลูกสร้าง','bm',MAT_MAP,b.b_chb)+sel('การใช้ประโยชน์','bu',USE_MAP,b.lu)+
+ field('จำนวนห้อง','br',b.b_room||'1','number')+field('กว้าง (ม.)','bw',b.wide||'','number')+field('ยาว (ม.)','bl',b.long||'','number')+
+ field('อายุอาคาร (ปี)','ba',b.b_age||'','number')+field('ชื่อ','bn',b.name||'')+field('บ้านเลขที่','bad',b.b_address||'')+field('หมู่','bmoo',b.b_moo||'')+
+ `<div class="field"><label>หมายเหตุ</label><textarea id="bnote">${esc(b.note||'')}</textarea></div>`;
+ openModal('แก้ไขสิ่งปลูกสร้าง',body,async()=>{
+   Object.assign(b,{b_type:document.getElementById('bt').value,b_chb:document.getElementById('bm').value,lu:document.getElementById('bu').value,
+   b_room:document.getElementById('br').value,wide:document.getElementById('bw').value,long:document.getElementById('bl').value,
+   b_age:document.getElementById('ba').value,name:document.getElementById('bn').value,b_address:document.getElementById('bad').value,
+   b_moo:document.getElementById('bmoo').value,note:document.getElementById('bnote').value,updatedAt:Date.now()});
+   await put('buildings',b);closeModal();await reload();status('✅ แก้ไข '+b.buildingCode+' แล้ว');
+ },async()=>{await del('buildings',b.id);closeModal();await reload();status('✅ ลบ '+b.buildingCode+' แล้ว')});
 }
 
-document.getElementById('restoreAll').addEventListener('change',async e=>{
- const file=e.target.files[0];
- if(!file)return;
+function openSurveyAdd(ll,f){
+ const pc=normalizeCode(parcelCode(f));if(!pc)return alert('แปลงนี้ไม่มีรหัสแปลง');
+ const body=`<div class="codebox">แปลง: ${esc(pc)}</div>`+
+ `<div class="field"><label>สถานะ</label><select id="ss"><option>สำรวจแล้ว</option><option>ตรวจแล้ว</option><option>มีการแก้ไข</option><option>ต้องกลับไปตรวจ</option></select></div>`+
+ `<div class="field"><label>หมายเหตุ</label><textarea id="sn"></textarea></div>`;
+ openModal('บันทึกสถานะสำรวจ',body,async()=>{
+  await put('surveys',{id:uuid(),orgId:currentOrgId,parcelCode:pc,lat:ll.lat,lng:ll.lng,status:document.getElementById('ss').value,note:document.getElementById('sn').value,updatedAt:Date.now()});
+  closeModal();await reload();status('✅ บันทึกสถานะแปลง '+pc+' แล้ว');
+ });
+}
 
+function searchNow(){
+ const q=normalizeCode(document.getElementById('search').value).toLowerCase();if(!q)return status('กรุณาพิมพ์รหัสที่ต้องการค้นหา');
+ const h=searchIndex.find(x=>normalizeCode(x.key).toLowerCase().includes(q));if(!h)return alert('ไม่พบข้อมูล '+q);
+ try{if(h.leaflet.getBounds)map.fitBounds(h.leaflet.getBounds(),{padding:[40,40],maxZoom:20});else map.setView(h.leaflet.getLatLng(),20)}catch(e){}
+ h.leaflet.openPopup?.();status('✅ พบข้อมูล '+q);if(window.innerWidth<=760)setSideOpen(false);
+}
+function csvEsc(v){const s=String(v??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
+function csv(name,rows){download(name,'\ufeff'+rows.map(r=>r.map(csvEsc).join(',')).join('\n'),'text/csv;charset=utf-8')}
+function stamp(){const d=new Date(),p=x=>String(x).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`}
+
+// --- Buttons ---
+document.getElementById('modalCancel').onclick=closeModal;
+document.getElementById('modalSave').onclick=async()=>{try{if(activeModal?.onSave)await activeModal.onSave()}catch(e){alert('บันทึกไม่สำเร็จ: '+e.message)}};
+document.getElementById('modalDelete').onclick=async()=>{if(activeModal?.onDelete&&confirm('ยืนยันลบ?'))await activeModal.onDelete()};
+document.getElementById('addOrg').onclick=async()=>{
+ try{const n=document.getElementById('newOrgName').value.trim();if(!n)return alert('กรุณากรอกชื่อ อปท.');
+ const o={id:uuid(),name:n};await put('orgs',o);currentOrgId=o.id;document.getElementById('newOrgName').value='';await refreshOrgs();status('✅ เพิ่ม อปท. '+n+' แล้ว')}catch(e){alert('เพิ่ม อปท. ไม่สำเร็จ: '+e.message)}
+};
+document.getElementById('orgSelect').onchange=async e=>{currentOrgId=e.target.value;await reload();status('✅ เปลี่ยน อปท. แล้ว');if(window.innerWidth<=760)setSideOpen(false)};
+document.getElementById('mode').onchange=e=>{mode=e.target.value;status('โหมด: '+e.target.options[e.target.selectedIndex].text);if(window.innerWidth<=760)setSideOpen(false)};
+document.getElementById('toggleLabels').onclick=()=>{showLabels=!showLabels;render();status(showLabels?'✅ แสดงรหัสแปลง':'✅ ซ่อนรหัสแปลง')};
+document.getElementById('satBtn').onclick=()=>{if(map.hasLayer(osm))map.removeLayer(osm);if(!map.hasLayer(sat))sat.addTo(map);status('✅ แผนที่ดาวเทียม')};
+document.getElementById('osmBtn').onclick=()=>{if(map.hasLayer(sat))map.removeLayer(sat);if(!map.hasLayer(osm))osm.addTo(map);status('✅ แผนที่ถนน')};
+document.getElementById('gpsBtn').onclick=()=>navigator.geolocation.getCurrentPosition(p=>{map.setView([p.coords.latitude,p.coords.longitude],19);status('✅ พบตำแหน่งปัจจุบัน')},e=>alert('ไม่สามารถอ่านตำแหน่งได้ กรุณาอนุญาต Location'));
+document.getElementById('btnSearch').onclick=searchNow;
+document.getElementById('search').onkeydown=e=>{if(e.key==='Enter')searchNow()};
+
+function setSideOpen(open){
+ const side=document.getElementById('side');
+ const overlay=document.getElementById('sideOverlay');
+ side.classList.toggle('open',open);
+ overlay.classList.toggle('open',open);
+ setTimeout(()=>{try{map.invalidateSize(false)}catch(e){}},220);
+}
+document.getElementById('topMobile').onclick=()=>setSideOpen(true);
+document.getElementById('closeSide').onclick=()=>setSideOpen(false);
+document.getElementById('sideOverlay').onclick=()=>setSideOpen(false);
+
+
+document.getElementById('fileInput').onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;
  try{
-   const pack=JSON.parse(await file.text());
-   if(pack.type!=='SOMPORN_FULL_BACKUP_V1') throw new Error('ไฟล์นี้ไม่ใช่ SOMPORN Full Backup');
-
-   const d=pack.data||{};
-   const counts={
-     orgs:(d.orgs||[]).length,
-     layers:(d.layers||[]).length,
-     buildings:(d.buildings||[]).length,
-     surveys:(d.surveys||[]).length
-   };
-
-   const ok=confirm(
-     'กู้คืนข้อมูลทั้งหมดจากไฟล์นี้?\n\n'+
-     'อปท.: '+counts.orgs+'\n'+
-     'ชั้นข้อมูล: '+counts.layers+'\n'+
-     'สิ่งปลูกสร้าง: '+counts.buildings+'\n'+
-     'จุดสำรวจ: '+counts.surveys+'\n\n'+
-     'คำเตือน: ข้อมูลปัจจุบันในเบราว์เซอร์จะถูกแทนที่ทั้งหมด'
-   );
-   if(!ok){e.target.value='';return;}
-
-   await clearStore('orgs');
-   await clearStore('layers');
-   await clearStore('buildings');
-   await clearStore('surveys');
-
-   await bulkPut('orgs',d.orgs);
-   await bulkPut('layers',d.layers);
-   await bulkPut('buildings',d.buildings);
-   await bulkPut('surveys',d.surveys);
-
-   currentOrgId=pack.currentOrgId||null;
-   await refreshOrgs();
-
-   alert('กู้คืนข้อมูลสำเร็จ');
-   document.getElementById('status').textContent=
-     `กู้คืนแล้ว · ${counts.orgs} อปท. · ${counts.layers} ชั้นข้อมูล · ${counts.buildings} สิ่งปลูกสร้าง · ${counts.surveys} จุดสำรวจ`;
- }catch(err){
-   alert('กู้คืนไม่สำเร็จ: '+err.message);
- }
+  if(!currentOrgId)throw new Error('ยังไม่มี อปท.');
+  status('กำลังนำเข้า '+f.name+' ...');const txt=await f.text();let geo;
+  if(f.name.toLowerCase().endsWith('.kml'))geo=parseKML(txt);else geo=normalizeGeo(JSON.parse(txt));
+  if(!geo.features.length)throw new Error('ไฟล์ไม่มี Feature');
+  await put('layers',{id:uuid(),orgId:currentOrgId,name:f.name,geo,createdAt:Date.now()});await reload();
+  let bounds=null;parcelLeaflets.forEach(l=>{try{const b=l.getBounds();bounds=bounds?bounds.extend(b):b}catch(x){}});if(bounds?.isValid())map.fitBounds(bounds,{padding:[20,20]});
+  const msg=`✅ นำเข้าเรียบร้อย: ${f.name} จำนวน ${geo.features.length.toLocaleString('th-TH')} รายการ`;status(msg);alert(msg);if(window.innerWidth<=760)setSideOpen(false);
+ }catch(err){const msg='❌ นำเข้าไม่สำเร็จ: '+err.message;status(msg);alert(msg)}
  e.target.value='';
-});
+};
 
-(async()=>{await openDB();await refreshOrgs();})();
+document.getElementById('csvBuild').onclick=()=>{const rows=[['parcel_cod','building_code','b_code','b_type','b_chb','b_room','wide','long','lu','b_age','name','b_address','b_moo','note','latitude','longitude']];buildings.forEach(b=>rows.push([b.parcelCode,b.buildingCode,b.b_code,b.b_type,b.b_chb,b.b_room,b.wide,b.long,b.lu,b.b_age,b.name,b.b_address,b.b_moo,b.note,b.lat,b.lng]));csv('buildings_'+stamp()+'.csv',rows);status('✅ Export CSV สิ่งปลูกสร้างแล้ว')};
+document.getElementById('csvSurvey').onclick=()=>{const rows=[['parcel_cod','status','note','latitude','longitude','updated_at']];surveys.forEach(s=>rows.push([s.parcelCode,s.status,s.note,s.lat,s.lng,new Date(s.updatedAt).toISOString()]));csv('surveys_'+stamp()+'.csv',rows);status('✅ Export CSV สำรวจแล้ว')};
+document.getElementById('backup').onclick=async()=>{const pack={type:'SOMPORN_CLEAN_V2_BACKUP',at:new Date().toISOString(),orgs:await all('orgs'),layers:await all('layers'),buildings:await all('buildings'),surveys:await all('surveys')};download('SOMPORN_BACKUP_'+stamp()+'.json',JSON.stringify(pack,null,2),'application/json');status('✅ Backup ทั้งระบบแล้ว')};
+document.getElementById('restore').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const p=JSON.parse(await f.text());if(p.type!=='SOMPORN_CLEAN_V2_BACKUP')throw new Error('ไฟล์ Backup ไม่ตรงรุ่น');if(!confirm('กู้คืนข้อมูลทั้งหมด?'))return;
+ for(const n of ['orgs','layers','buildings','surveys'])await reqP(st(n,'readwrite').clear());
+ for(const x of p.orgs||[])await put('orgs',x);for(const x of p.layers||[])await put('layers',x);for(const x of p.buildings||[])await put('buildings',x);for(const x of p.surveys||[])await put('surveys',x);
+ currentOrgId=null;await refreshOrgs();status('✅ Restore สำเร็จ');alert('✅ กู้คืนข้อมูลเรียบร้อย')}catch(err){alert('Restore ไม่สำเร็จ: '+err.message)}e.target.value=''};
 
-window.addEventListener('error',function(e){
-  const box=document.getElementById('fatalError');
-  if(box){
-    box.style.display='block';
-    box.textContent='⚠ โปรแกรมพบข้อผิดพลาด: '+(e.message||'ไม่ทราบสาเหตุ');
-  }
-});
-window.addEventListener('unhandledrejection',function(e){
-  const box=document.getElementById('fatalError');
-  if(box){
-    box.style.display='block';
-    box.textContent='⚠ โปรแกรมพบข้อผิดพลาด: '+((e.reason&&e.reason.message)||e.reason||'ไม่ทราบสาเหตุ');
-  }
-});
+map.on('click',e=>{if(mode==='building-add'){const f=findParcel(e.latlng);if(!f)return alert('จุดนี้อยู่นอกแปลง');openBuildAdd(e.latlng,f)}else if(mode==='survey-add'){const f=findParcel(e.latlng);if(!f)return alert('จุดนี้อยู่นอกแปลง');openSurveyAdd(e.latlng,f)}});
+
+(async()=>{
+ try{
+  await openDB();await refreshOrgs();status('✅ ระบบพร้อมใช้งาน');
+  setTimeout(()=>map.invalidateSize(true),250);
+ }catch(e){status('❌ เปิดฐานข้อมูลไม่สำเร็จ');alert('เปิดระบบไม่สำเร็จ: '+e.message)}
+})();
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')setSideOpen(false)});
+window.addEventListener('resize',()=>{if(window.innerWidth>760)setSideOpen(false)});
 
 </script>
-
-<div id="fatalError" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:99999;
-background:#b91c1c;color:white;padding:10px 12px;border-radius:10px;font:13px Tahoma,Arial,sans-serif;
-box-shadow:0 3px 14px rgba(0,0,0,.35)"></div>
-
-</body>
-</html>
+</body></html>
