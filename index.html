@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SOMPORN Parcel STABLE REBUILD V15</title>
+<title>SOMPORN Parcel STABLE REBUILD V16 MODE-CENTER</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box} html,body{height:100%;margin:0;font-family:Tahoma,Arial,sans-serif;background:#f4f6f8;color:#17202a}
@@ -88,6 +88,49 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
 }
 </style>
 
+
+<style>
+#modeCenter{
+  position:absolute;
+  top:10px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:2200;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  background:rgba(255,255,255,.96);
+  padding:7px 9px;
+  border-radius:10px;
+  box-shadow:0 2px 10px rgba(0,0,0,.20);
+  border:1px solid #d9dee5;
+}
+#modeCenter label{
+  font-size:12px;
+  font-weight:700;
+  white-space:nowrap;
+}
+#modeCenter select{
+  width:auto;
+  min-width:190px;
+  padding:7px 9px;
+  border-radius:8px;
+}
+@media(max-width:760px){
+  #modeCenter{
+    top:10px;
+    max-width:calc(100vw - 120px);
+    padding:6px 7px;
+  }
+  #modeCenter label{display:none}
+  #modeCenter select{
+    min-width:0;
+    width:min(58vw,220px);
+    font-size:14px;
+  }
+}
+</style>
+
 </head>
 <body>
 <div id="app">
@@ -103,7 +146,7 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
     </div>
   </div>
 
-  <h2>SOMPORN Parcel STABLE REBUILD V15</h2>
+  <h2>SOMPORN Parcel STABLE REBUILD V16 MODE-CENTER</h2>
   <div class="sub">ระบบแปลงที่ดิน + สิ่งปลูกสร้าง + จุดสำรวจ</div>
 
   <div class="section">
@@ -112,13 +155,6 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
   </div>
 
   <div class="section">
-    <div class="field"><label>โหมดทำงาน</label>
-      <select id="mode">
-        <option value="view">ดูข้อมูล</option>
-        <option value="building-add">เพิ่มสิ่งปลูกสร้าง</option>
-        <option value="survey-add">ทำเครื่องหมายสำรวจ</option>
-      </select>
-    </div>
     <div class="row">
       <label class="filebtn primary grow" for="fileInput">📂 นำเข้า KML / JSON</label>
       <input id="fileInput" type="file" accept=".kml,.json,.geojson" hidden>
@@ -152,7 +188,17 @@ textarea{min-height:70px;resize:vertical}.field{margin:7px 0}.field label{displa
 </aside>
 
 <main id="mapWrap">
-  <div id="versionBadge" style="position:absolute;right:10px;top:10px;z-index:1300;background:#111827;color:#fff;padding:6px 8px;border-radius:8px;font-size:11px">STABLE V15</div>
+
+  <div id="modeCenter">
+    <label for="mode">โหมดทำงาน</label>
+    <select id="mode">
+      <option value="view">ดูข้อมูล</option>
+      <option value="building-add">เพิ่มสิ่งปลูกสร้าง</option>
+      <option value="survey-add">ทำเครื่องหมายสำรวจ</option>
+    </select>
+  </div>
+
+  <div id="versionBadge" style="position:absolute;right:10px;top:10px;z-index:1300;background:#111827;color:#fff;padding:6px 8px;border-radius:8px;font-size:11px">STABLE V16</div>
   <div id="cloudBadge" style="position:absolute;right:10px;top:42px;z-index:1300;background:#fff7e6;color:#8a5a00;padding:6px 8px;border-radius:8px;font-size:11px;max-width:70vw;box-shadow:0 1px 6px #0002">☁ กำลังตรวจ Cloud...</div>
   <button id="topMobile">☰ เมนู</button>
   <div id="map"></div>
